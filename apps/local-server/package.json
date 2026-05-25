@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx src/server.ts"
+    "dev": "tsx src/server.ts",
+    "build": "tsc --noEmit && echo build ok",
+    "start": "tsx src/server.ts"
   },
   "dependencies": {
     "@fastify/cors": "latest",
