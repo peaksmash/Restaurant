@@ -1,0 +1,993 @@
+===== PAGE 21 =====
+<name> Usuario de CashDro (Ej: &name=admin).
+<password> Contraseña asociada al usuario indicado en <name>.
+<operationId> Número de transacción asignado por el CashDro.
+La respuesta emitida por CashDro será un objeto con formato JSON.
+Solo se deben tener en cuenta los siguientes campos:
+Parámetros de la respuesta Descripción
+<operationId> Identificador de la transacción.
+<state> Estado de la transacción:
+I  = operación pendiente de ejecutar (acknowledge).
+Q = la operación está en cola.
+E = la operación está en ejecución.
+F = la operación está finalizada.
+<total> Importe de la transacción.
+<totalin> Importe total introducido en CashDro. Siempre se 
+indica multiplicado por 100. Por ejemplo, para un 
+importe de 1,05 se indica 105.
+<-totalout> Importe total dispensado por CashDro. Siempre se 
+indica multiplicado por 100 y en negativo.
+<withError> True/false. Indica si CashDro está operativo o en 
+estado de error (ej . billete atascado,..). 
+<devices> Engloba los distintos dispositivos de CashDro 
+anotados en el recuadro siguiente.
+<type> Tipo de dispositivos:
+  1 – Validador de monedas.
+  2 – Reciclador de monedas.
+  3 – Billetero.
+<value> Según el tipo de dispositivo se indican las 
+denominaciones que comprende.
+Ej: {"value":"500"..........{"value":"1000"...
+<finishlevelrecycler> Indica los niveles finales en el reciclador 
+("finishlevelrecycler":...,) y en el Casete 
+Transacciones con movimiento de efectivo | 14
+
+
+===== PAGE 22 =====
+<finishlevelcassette> ("finishlevelcassette":...,).
+<amountchangenotavailable> Importe no devuelto al generarse un cambio no 
+disponible.
+<messages> Muestra el mensaje de los siguientes eventos: 
+0: Pieza rechazada por falta de cambio.
+1: Pieza no reciclable.
+2: Pieza no aceptada temporalmente.
+3: Pieza no aceptada.
+4: Pieza no reconocida.
+5: Reciclador lleno.
+6: Escrow lleno 
+7: Reciclador y escrow llenos 
+8: No reciclable o reciclador lleno
+<payinprogress> Solo afecta al billetero y comprueba el estado de la 
+venta, durante el proceso de cobro (entrada de 
+billetes):
+Puede retornar los siguientes valores:
+0: el importe introducido es menor al importe de la 
+operación.
+1: el importe introducido es igual o mayor al importe
+de la operación y el billetero ya ha almacenado el 
+importe introducido.
+<payoutprogress> Solo afecta al billetero y comprueba el estado de la 
+venta durante el proceso de pago (devolución de 
+billetes):
+Puede retornar los siguientes valores:
+0: no se han retirado todos los billetes .
+1: se han retirado todos los billetes.
+Si  las  credenciales  (usuario  y  contraseña)  utilizadas  en  la  llamada,  son  incorrectas,  el
+CashDro devolverá la siguiente respuesta:
+Parámetros de la respuesta Descripción
+{"code":-1,"response":
+{"errorMessage":"Authentication Failed"}}
+Usuario/password incorrectos.
+5.1.5. Cancelar o finalizar una transacción (Opcional)
+Para cancelar o finalizar una transacción se debe realizar la siguiente llamada:
+Transacciones con movimiento de efectivo | 15
+
+
+===== PAGE 23 =====
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://<ip>/Cashdro3WS/index3.php?
+operation=finishOperation&name=<name>&password=<pa
+ssword>&operationId=<operationId>&type=<endType>
+Respuesta
+Web service{"code":<code>,"response":{"errorMessage":"none"}}
+Parámetros de la
+llamada
+Descripción
+<ip> IP asociada al CashDro.
+<name> Usuario de CashDro (Ej: &name=admin).
+<password> Contraseña asociada al usuario indicado en <name>.
+<operationId> Número de transacción asignado por el CashDro.
+<endType> • &type=1 (Finalizar transacción).
+• &type=2 (Cancelar transacción).
+Parámetros de la Respuesta Descripción
+{"code":1,"response":
+{"errorMessage":"none"}}
+Transacción cancela/finalizada 
+correctamente.
+{"code":-1,"response":
+{"errorMessage":"Authentication Failed"}}
+Usuario/password incorrectos.
+{"code":-2,"response":
+{"errorMessage":"Operation not in 
+execution"}}
+La operación no se está ejecutando.
+{"code":-99,"response":
+{"errorMessage":"Invalid Parameters"}}
+Parámetros incorrectos.
+{"code":-999,"response":
+{"errorMessage":"Cashdro service is not 
+running"}}
+El servicio de CashDro está parado.
+5.1.6. Llamada para Importar una transacción
+Una vez finalizada la transacción, se debe indicar al CashDro que ésta ha sido recibida y
+procesada por el Host.
+Transacciones con movimiento de efectivo | 16
+
+
+===== PAGE 24 =====
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://<ip>/Cashdro3WS/index3.php?
+operation=setOperationImported&name=<name>&passwor
+d=<password>&operationId=<operationId>
+Respuesta
+Web service{"code":<code>,"response":{"errorMessage":"none"}}
+Parámetros de la
+llamada
+Descripción
+<ip> IP asociada al CashDro.
+<name> Usuario de CashDro (Ej: &name=admin).
+<password> Contraseña asociada al usuario indicado en <name>.
+<operationId> Número de transacción asignado por el CashDro.
+Parámetros de la Respuesta Descripción
+{"code":1,"response":
+{"errorMessage":"none"}}
+Transacción importada correctamente.
+{"code":-1,"response":
+{"errorMessage":"Authentication Failed"}}
+Usuario/password incorrectos.
+{"code":-2,"response":
+{"errorMessage":"Operation not found
+El identificador de la transacción es 
+incorrecto.
+{"code":-3,"response":
+{"errorMessage":"Invalid parameters"}}
+Parámetros incorrectos, transacción no 
+importada.
+Transacciones con movimiento de efectivo | 17
+
+
+===== PAGE 25 =====
+5.1.7. El flujo de la transacción de venta
+Transacciones con movimiento de efectivo | 18
+
+
+===== PAGE 26 =====
+5.1.8. Ejemplo de la transacción: venta
+A continuación, un ejemplo de una transacción de venta básica  sin  tener en cuenta las
+llamadas opcionales al servicio web.
+NOTA: En los ejemplos se asume que el equipo CashDro tiene asociada la dirección IP:
+192.168.13.168 y que existe un usuario admin (con contraseña 1234) en el CashDro, con el
+permiso necesario para realizar la operación.
+Desde el TPV (terminal2), María (operadora de caja) realiza una venta de 18,25 €. El cliente
+paga 18,30 € y se le entrega un cambio de 0,05 €. 
+1. Llamada de la transacción de venta
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://192.168.13.168/Cashdro3WS/index3.php?
+operation=startOperation&name=admin&password=1234&ty
+pe=4&posid=terminal2&posuser=María&aliasid=V0005&para
+meters={"amount":"1825"}
+Respuesta
+Web service{"code":1,"response": {"errorMessage": "none","operation": 
+{"operationId": "452"}}}
+2. Llamada para ejecutar la transacción
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://192.168.13.168/Cashdro3WS/index3.php?
+operation=acknowledgeOperationId&name=admin&passwor
+d=1234&operationId=452
+Respuesta
+Web service{"code":1,"response":{"errorMessage":"none"}}
+El Host deberá realizar consultas periódicas del estado de la operación hasta que CashDro
+le confirme que ha finalizado la ejecución de la transacción:
+4. Llamada para consultar el estado transacción
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://192.168.13.168/Cashdro3WS/index3.php?
+operation=askOperation&operationId=452&name=admin&pa
+ssword=1234
+Respuesta
+Web service{
+    "code": 1,
+Transacciones con movimiento de efectivo | 19
+
+
+===== PAGE 27 =====
+    "response": {
+        "errorMessage": "none",
+        "operation": {
+            "operation": {
+                "operationid": "452",
+                "state": "F",
+                "payInProgress": "1",
+                "payOutProgress": "1",
+                "total": "1825",
+                "totalin": "1830",
+                "totalout": "-5",
+                "amountchangenotavailable": "0",…
+            },
+            "devices": [...
+                {
+                    "type": "2",...
+                    "pieces":[
+                        {...
+                            "value":"5",...
+                            "finishlevelrecycler":25,
+                            "finishlevelcassette":0,...
+                        },...
+                    ]
+                },...
+            ],
+            "messages": [],...
+            "withError": "false",...
+        }
+    }
+}
+6. Llamada para Importar una transacción
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://192.168.13.168/Cashdro3WS/index3.php?
+operation=setOperationImported&name=admin&password=1
+234&operationId=452
+Respuesta
+Web service{"code":1,"response":{"errorMessage":"none"}}
+Transacciones con movimiento de efectivo | 20
+
+
+===== PAGE 28 =====
+5.2. Pago
+A continuación se presenta la lista de acciones de comunicación entre el Host y el CashDro,
+necesarias para ejecutar una transacción de pago.
+5.2.1. Llamada de la transacción de pago
+Esta llamada tiene la finalidad de informar al CashDro de que se desea iniciar la ejecución
+de una transacción de tipo pago (type=3). En la llamada se informa de las credenciales del
+usuario CashDro que va a ejecutar la operación y del resto de datos informativos.
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://<ip>/Cashdro3WS/index3.php?
+operation=startOperation&name=<name>&password=<pas
+sword>&type=3&posid=<posid>&posuser=<posuser>&aliasi
+d=<aliasid>&parameters={"amount":"<amount>"}
+Respuesta
+Web service{
+    "code":<code>,
+    "response": {
+        "errorMessage": "none",
+        "operation": {
+            "operationId": “<operationId>”
+        }}}
+Parámetros de la
+llamada
+Descripción
+<ip> IP asociada al CashDro.
+<name> Usuario de CashDro (Ej: &name=admin).
+<password> Contraseña asociada al usuario indicado en <name>.
+<posid> El TPV que realiza la llamada al web service (Ej: 
+&posid=Terminal3).
+<posuser> Nombre  del  vendedor  que  realiza  la  transacción  (Ej:
+&posuser=Juan ).
+<aliasid> 
+(opcional)
+Identificador único de la operación con sentido para el cliente.
+(Ej: &aliasid=P00003).
+<amount> Importe multiplicado por 100. 
+(Ej: &parameters={"amount":"100"} seria 1,00 €).
+Transacciones con movimiento de efectivo | 21
+
+
+===== PAGE 29 =====
+Parámetros de la respuesta Descripción
+{"code": 1,
+    "response": {
+        "errorMessage": "none",
+        "operation": {
+            "operationId": "<operationId >"
+        }}}
+<operationId>: Número de transacción 
+asignado por el CashDro. La recepción de 
+este valor nos confirma que se ha recibido 
+correctamente la llamada. (Ej: 
+{"code":1,"data":"1186"})
+{"code":-1,"response":
+{"errorMessage":"Authentication Failed"}}
+Usuario/password incorrectos.
+{"code":-2,"response":
+{"errorMessage":"Operation not queued"}}
+CashDro ocupado con otra transacción.
+{"code":-3,"response":
+{"errorMessage":"Wrong amount"}}
+Importe de la transacción incorrecto.
+{"code":-4,"response":
+{"errorMessage":"User does not have 
+permission"}}
+El usuario no tiene permiso para realizar la 
+transacción.
+{"code":-99,"response":
+{"errorMessage":"Invalid Parameters"}}
+Parámetros incorrectos.
+{"code":-1900,"response":
+{"errorMessage":"System busy"}}
+CashDro está cargando o actualizando.
+{"code":-998,"response":
+{"errorMessage":"Can't start operation. 
+Check system status on Diagnosis 
+screen"}}
+CashDro está fuera de servicio. Revisar 
+estado en la pantalla de diagnostico.
+{"code":-999,"response":
+{"errorMessage":"Cashdro service is not 
+running"}}
+El servicio de CashDro está parado.
+5.2.2. Llamada para Ejecutar la transacción
+Esta llamada ejecutará la transacción con el <operationId> anteriormente indicado.
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://<ip>/Cashdro3WS/index3.php?
+operation=acknowledgeOperationId&name=<name>&pass
+word=<password>&operationId=<operationId>
+Respuesta
+Web service{
+    "code": <code>,
+Transacciones con movimiento de efectivo | 22
+
+
+===== PAGE 150 =====
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://<ip>/Cashdro3WS/index3.php?
+operation=acknowledgeOperationId&name=<name>&pass
+word=<password>&operationId=<operationId>
+Respuesta
+Web service{"code":<code>,"response":{"errorMessage":"none"}}
+Parámetros de la
+llamada
+Descripción
+<ip> IP asociada al CashDro
+<name> Usuario de CashDro (Ej: &name=admin).
+<password> Contraseña asociada al usuario indicado en <name>.
+<operationId> Número de transacción asignado por el CashDro.
+Parámetros de la respuesta Descripción
+{"code":1,"response":
+{"errorMessage":"none"}}
+CashDro inicia la transacción 
+{"code":-1,"response":
+{"errorMessage":"Authentication Failed"}}
+Usuario/password incorrectos
+{"code":-2,"response":
+{"errorMessage":"Operation not found
+Identificador de la transacción incorrecto
+{"code":-3,"response":
+{"errorMessage":"Invalid parameters"}}
+Parámetros incorrectos, transacción no 
+iniciada.
+5.13.3. Llamada para visualizar y finalizar la transacción en ejecución
+Esta  llamada  permite  visualizar  la  transacción  en  ejecución desde  la interfaz  web  de
+CashDro. Es necesario acceder a la interfaz web de CashDro para poder gestionar esta
+transacción,  pues  será  necesario  indicar  al  software  CashDro  si  el  dispositivo  ha  sido
+retirado o no mediante los botones de la pantalla (ver el ejemplo). 
+HOST Mensajes CASHDRO
+Llamada interfaz
+web
+https://<ip>/Cashdro3Web/index.html#/splash/
+true Respuesta 
+Transacciones con movimiento de efectivo | 143
+
+
+===== PAGE 151 =====
+Web / html
+(Ejemplo)
+Parámetros de la
+llamada
+Descripción
+<ip> IP asociada al CashDro.
+5.13.4. Llamada para consultar el estado de la transacción
+Una vez iniciada la ejecución de la transacción, se podrá consultar su estado. Cuando la
+operación finaliza en el CashDro, el campo "state":"F".
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://<ip>/Cashdro3WS/index3.php?
+operation=askOperation&operationId=<operationId>&name
+=<name>&password=<password>
+Respuesta
+Web service{
+    "code": <code>,
+    "response": {
+        "errorMessage": "none",
+        "operation": {
+            "operation": {
+                "operationid": "<operationId>",
+                "state": "<state>",
+                "payInProgress": "<payInProgress>",
+                "payOutProgress": "<payOutProgress>",
+                "total": "<total>",
+                "totalin": "<totalin>",
+                "totalout": "<-totalout>",
+                "amountchangenotavailable":
+                               "<amountchangenotavailable>",…
+            },
+            "devices": [...
+                {
+                    "type": "<type>",...
+                    "pieces":[
+Transacciones con movimiento de efectivo | 144
+
+
+===== PAGE 152 =====
+                        {...
+                            "value":"<value>",...
+                            "finishlevelrecycler":<finishlevelrecycler>,
+                            "finishlevelcassette":<finishlevelcassette>,
+                            ...
+                        },...
+                    ]
+                },...
+            ],
+            "messages": [],...
+            "withError": "<withError>",...
+        }
+    }
+}
+Parámetros de la
+llamada
+Descripción
+<ip> IP asociada al CashDro
+<name> Usuario de CashDro (Ej: &name=admin).
+<password> Contraseña asociada al usuario indicado en <name>.
+<operationId> Número de transacción asignado por el CashDro.
+La respuesta emitida por CashDro será un objeto con formato JSON.
+Solo se deben tener en cuenta los siguientes campos:
+Parámetros de la respuesta Descripción
+<operationId> Identificador de la transacción
+<state> Estado de la transacción
+I  = operación pendiente de ejecutar (acknowledge)
+Q = la operación está en cola
+E = la operación está en ejecución
+F = la operación está finalizada
+<withError> True/false. Indica si CashDro está operativo o en 
+estado de error (ej . billete atascado,..). 
+<devices> Engloba los distintos dispositivos de CashDro 
+anotados en el recuadro siguiente.
+Transacciones con movimiento de efectivo | 145
+
+
+===== PAGE 153 =====
+<type> Tipo de dispositivos:
+  1 – Validador de monedas
+  2 – Reciclador de monedas
+  3 – Billetero
+<value> Según el tipo de dispositivo se indican las 
+denominaciones que comprende.
+Ej: {"value":"500"..........{"value":"1000"...
+<finishlevelrecycler>
+<finishlevelcassette>
+Indica los niveles finales en el reciclador 
+("finishlevelrecycler":...,) y en el Casete 
+("finishlevelcassette":...,)
+<amountchangenotavailable> Importe no devuelto al generarse un cambio no 
+disponible.
+<messages> Muestra el mensaje de los siguientes eventos: 
+0: Pieza rechazada por falta de cambio
+1: Pieza no reciclable
+2: Pieza no aceptada temporalmente
+3: Pieza no aceptada
+4: Pieza no reconocida
+5: Reciclador lleno 
+6: Escrow lleno 
+7: Reciclador y escrow llenos 
+8: No reciclable o reciclador lleno
+Si  las  credenciales  (usuario  y  contraseña)  utilizadas  en  la  llamada,  son  incorrectas,  el
+CashDro devolverá la siguiente respuesta:
+Parámetros de la respuesta Descripción
+{"code":-1,"response":
+{"errorMessage":"Authentication Failed"}}
+Usuario/password incorrectos
+5.13.5. Finalización o cancelación
+Desde la web es posible cancelar o finalizar la operación utilizando los botones de la parte
+superior derecha.
+Transacciones con movimiento de efectivo | 146
+
+
+===== PAGE 154 =====
+5.13.6. Llamada para importar una transacción
+Una vez finalizada la transacción, se debe indicar al CashDro que ésta ha sido recibida y
+procesada por el Host.
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://<ip>/Cashdro3WS/index3.php?
+operation=setOperationImported&name=<name>&passwor
+d=<password>&operationId=<operationId>
+Respuesta
+Web service{"code":<code>,"response":{"errorMessage":"none"}}
+Parámetros de la
+llamada
+Descripción
+<ip> IP asociada al CashDro
+<name> Usuario de CashDro (Ej: &name=admin).
+<password> Contraseña asociada al usuario indicado en <name>.
+<operationId> Número de transacción asignado por el CashDro.
+Parámetros de la Respuesta Descripción
+{"code":1,"response":
+{"errorMessage":"none"}}
+Transacción importada correctamente
+{"code":-1,"response":
+{"errorMessage":"Authentication Failed"}}
+Usuario/password incorrectos
+{"code":-2,"response":
+{"errorMessage":"Operation not found
+El identificador de la transacción es 
+incorrecto
+{"code":-3,"response":
+{"errorMessage":"Invalid parameters"}}
+Parámetros incorrectos, transacción no 
+importada
+Transacciones con movimiento de efectivo | 147
+
+
+===== PAGE 155 =====
+5.13.7. El flujo de la transacción
+Transacciones con movimiento de efectivo | 148
+
+
+===== PAGE 156 =====
+5.13.8. Ejemplo de la transacción: retirada casete de monedas
+A continuación se añade un ejemplo de una transacción de retirada de casete de monedas.
+Desde el TPV terminal2, María (operadora de caja) inicia una operación de retirada del 
+casete de monedas. Había 800,00 € en el casete de monedas. Las llamadas a realizar 
+serían:
+1. Llamada de la transacción de la retirada de casete de monedas
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://192.168.13.168/Cashdro3WS/index3.php?
+operation=startOperation&name=admin&password=1234&ty
+pe=11&posid=terminal2&posuser=María&aliasid=961
+Respuesta
+Web service{
+    "code": 1,
+    "response": {
+        "errorMessage": "none",
+        "operation": {
+            "operationId": "790"
+        }}}
+2. Llamada para ejecutar la transacción
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://192.168.13.168/Cashdro3WS/index3.php?
+operation=acknowledgeOperationId&name=admin&passwor
+d=1234&operationId=790
+Respuesta
+Web service{"code":1,"response":{"errorMessage":"none"}}
+3. Llamada para visualizar e interactuar con la interfaz web de CashDro
+HOST Mensajes CASHDRO
+Llamada
+interfaz web
+https://192.168.13.168/Cashdro3Web/index.html#/splash/true
+Respuesta
+Web serviceVisualización web de la pantalla de retirada del casete de 
+monedas.
+4. Llamada para consultar el estado transacción
+HOST Mensajes CASHDRO
+Transacciones con movimiento de efectivo | 149
+
+
+===== PAGE 157 =====
+Llamada
+Web service
+https://192.168.13.168/Cashdro3WS/index3.php?
+operation=askOperation&operationId=790&name=admin&pa
+ssword=1234
+Respuesta
+Web service{
+    "code": 1,
+    "response": {
+        "errorMessage": "none",
+        "operation": {
+            "operation": {
+                "operationid": "790",
+                "state": "F",
+                "payInProgress": "1",
+                "payOutProgress": "1",
+                "total": "80000",
+                "totalin": "0",
+                "totalout": "-80000",
+                "amountchangenotavailable": "0",…
+            },
+            "devices": [...
+                {
+                    "type": "2",...
+                    "pieces":[
+                        {...
+                            "value":"100",...
+                            "finishlevelrecycler":52,
+                            "finishlevelcassette":20,...
+                        },...
+                    ]
+                },...
+            ],
+            "messages": [],...
+            "withError": "false",...
+        }
+    }
+}
+5. Llamada para Importar una transacción
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://192.168.13.168/Cashdro3WS/index3.php?
+operation=setOperationImported&name=admin&password=1
+234&operationId=790
+Respuesta
+Web service{"code":1,"response":{"errorMessage":"none"}}
+Transacciones con movimiento de efectivo | 150
+
+
+===== PAGE 158 =====
+6. Operaciones y consultas sin movimiento de 
+efectivo
+A diferencia  del  apartado  anterior  estas  llamadas  al  servidor  web  tienen  la  función  de
+consultar cierta información especifica al CashDro.
+A continuación se indican todas las consultas que se pueden realizar.
+6.1. Consulta para verificar la conexión con CashDro
+Esta llamada sirve para verificar si es posible realizar una conexión correcta con CashDro 
+utilizando las credenciales del usuario.
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://192.168.13.178//Cashdro3WS/index3.php?
+operation=doTest&name=<name>&password=<password> Respuesta
+Web service{ "code": <code>,
+    "response": {
+        "errorMessage": "none"
+    }}
+Ejemplo respuesta correcta:
+{
+    "code": 1,
+    "response": {
+        "errorMessage": "none"
+    }
+}
+Ejemplo respuesta incorrecta:
+{
+    "code": -1,
+    "response": {
+        "errorMessage": "Authentication Failed"
+    }
+}
+6.2. Consultar operaciones pendientes de importar 
+Esta  llamada  sirve  para  consultar  a  CashDro  si  hubiera  operaciones  que  no  han  sido
+importadas. Los escenarios donde sera necesario utilizar dicha consulta son:
+1. Si ha quedado alguna transacción pendiente de importar por el software externo y
+antes de realizar el cierre de caja se deben importar.
+2. Si ha sido realizada alguna transacción directamente desde el CashDro y el software
+externo quiere tener conocimiento de ello y registrarlo. 
+Operaciones y consultas sin movimiento de efectivo | 151
+
+
+===== PAGE 159 =====
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://<ip>/Cashdro3WS/index3.php?
+operation=askPendingOperations&name=<name>&passwo
+rd=<password>&terminal=<posid>&importManualOperations
+= <manualOperations> Respuesta
+Web service
+{
+    "code":<code>,
+    "response": {
+        "errorMessage": "none",
+        "operation": {
+            “pendingOperations": [...]
+        }}}
+Parámetros de la
+llamada
+Descripción
+<ip> IP asociada al CashDro
+<name> Usuario de CashDro (Ej: &name=admin).
+<password> Contraseña asociada al usuario indicado en <name>.
+<posid> El TPV que realiza la llamada al web service (Ej: 
+&posid=Terminal3)
+<manualOper
+ations>
+<manualOperations> = true → Transacciones realizadas desde 
+CashDro y desde el <posid> que realiza la consulta.
+<manualOperations> = false → Transacciones realizadas 
+unicamente desde el <posid> que realiza la consulta.
+Parámetros de la Respuesta Descripción
+{
+   "code": 1,
+   "response": {
+      "errorMessage": "none",
+      "operation": {
+         "pendingOperations": [
+            {
+               "OperationId": "69"
+            },
+            {
+               "OperationId": "73"
+            },...
+Se indica el identificador “operationId” de 
+cada operación pendiente de importar.
+Operaciones y consultas sin movimiento de efectivo | 152
+
+
+===== PAGE 160 =====
+         ]
+      }}}
+{"code":-1,"response":
+{"errorMessage":"Authentication Failed"}}
+Usuario/password incorrectos
+{"code":-99,"response":
+{"errorMessage":"Invalid Parameters"}}
+Parámetros incorrectos
+6.3. Consulta de niveles de efectivo
+Con la siguiente llamada se consulta a CashDro los niveles actuales por cada denominación.
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://<ip>/Cashdro3WS/index3.php?
+operation=getPiecesCurrency&currencyId=<currencyId>&in
+cludeImages=0&includeLevels=<levels>&name=<name>&pa
+ssword=<password> Respuesta
+Web service
+{
+    "code":<code>,
+    "response": {
+        "errorMessage": "none",
+        "operation": {
+            "pieces": [...]
+        }}}
+Parámetros de 
+la llamada
+Descripción
+<ip> IP asociada al CashDro
+<name> Usuario de CashDro (Ej: &name=admin).
+<password> Contraseña asociada al usuario indicado en <name>.
+<currencyId> Identificador de la cotización: EUR, RUB ...
+<levels> Se indica si devolver los niveles actuales de las piezas:
+<levels> = 0 → No
+<levels> = 1 → Sí
+ 
+Operaciones y consultas sin movimiento de efectivo | 153
+
+
+===== PAGE 161 =====
+Parámetros de la respuesta Descripción
+{
+   "code": 1,
+   "response": {
+      "errorMessage": "none",
+      "operation": {
+         "pieces": [
+            {
+               "CurrencyId": "EUR",
+               "Value": "1",
+               "Type": "1",
+               "Destination": "1",
+               "MinLevel": "1",
+               "MaxLevel": "0",
+               "DepositLevel": "27",
+               "MaxPiecesExchange": "0",
+               "State": "-1",
+               "Image": "",
+               "LevelRecycler": "28",
+               "LevelCasete": "0",...
+            },...
+         ]
+      }
+   }
+}
+Se da la lista de piezas (billetes y monedas).
+Para cada una de las piezas se especifican los
+siguientes campos:
+• CurrencyId:  código  de  la  moneda.  EUR,
+RUB …
+• Value: el valor multiplicado por 100
+• Type:
+◦ 1: Moneda
+◦ 2: Billete
+• Destination:  Ubicación  de  la  moneda
+después de introducirse en el CashDro.
+◦ 0: No aceptada
+◦ 1: Reciclador
+◦ 2: Casete
+• MinLevel: Nivel mínimo
+• MaxLevel: Nivel Máximo
+• DepositLevel: Nivel de fianza de la pieza
+• MaxPiecesExchange:  Numero  máximo  de
+piezas para devolver en un cambio
+• State:  Si  hay  alguna  altera  por
+denominación
+◦ -1: No hay alerta
+◦ 0: Nivel critico
+◦ 1: Nivel de inhibición
+◦ 2: Nivel bajo mínimos
+◦ 3: Nivel sobre máximos
+◦ 5: Nivel a cero
+• Image: Imagen de la moneda o el billetero
+• LevelRecycler: Nivel en el reciclador
+• LevelCasete: Nivel en el casete  
+6.4. Consulta alertas de piezas 
+Consulta a CashDro qué denominaciones están  en nivel critico, en inhibición, bajo mínimos
+o sobre máximos.
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://<ip>/Cashdro3WS/index3.php?operation=getAlerts
+Respuesta
+Web service{ "code":<code>, "response": {
+        "errorMessage": "none",
+        "operation": {
+            "alerts": [ ]
+        }}}
+Operaciones y consultas sin movimiento de efectivo | 154
+
+
+===== PAGE 162 =====
+Parámetros de la
+llamada
+Descripción
+<ip> IP asociada al CashDro
+Parámetros de la respuesta Descripción
+{
+   "code": 1,
+   "response": {
+      "errorMessage": "none",
+      "operation": {
+         "alerts": [
+            {
+               "AlertId": "4",
+               "Source": "1",
+               "Value": "200",
+               "Type": "0",
+               "CurrencyId": "EUR"
+            },
+            {
+               "AlertId": "1",
+               "Source": "2",
+               "Value": "500",
+               "Type": "5",
+               "CurrencyId": "EUR"
+            },...
+         ]
+      }
+   }
+}
+Listado con las alertas de las diferentes 
+piezas afectadas.
+Las propiedades con los posibles valores 
+son los siguientes:
+• AlertId: Identificador de la alerta.
+• Source: Origen de la alerta.
+◦ 1: Moneda
+◦ 2: Billete
+◦ 3: Casete monedas
+◦ 4: Casete billetes
+◦ 5: Reciclador de monedas
+• Value: Valor de la pieza, multiplicado 
+por 100. 
+• Type: Tipo de alerta.
+◦ 0: Nivel crítico
+◦ 1: Nivel de inhibición
+◦ 2: Nivel bajo mínimo
+◦ 3: Nivel sobre máximo
+◦ 5: Nivel a cero
+• CurrencyId: Código de la cotización. 
+“EUR”, “RUB” ...
+6.5. Consulta estado del CashDro
+Consulta a CashDro si hay alguna incidencia o problema con los dispositivos internos del
+equipo.
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://<ip>/Cashdro3WS/index3.php?
+operation=getDiagnosis Respuesta
+Web service{
+   "code": <code>,
+   "response": {
+Operaciones y consultas sin movimiento de efectivo | 155
+
+
+===== PAGE 163 =====
+      "errorMessage": "none",
+      "operation": {
+         "WithError": <withError>,
+         ...
+         "Devices":[…]
+      }}}
+Parámetros de la
+llamada
+Descripción
+<ip> IP asociada al CashDro
+Parámetros de la respuesta Descripción
+{
+   "code": 1,
+   "response": {
+      "errorMessage": "none",
+      "operation": {
+         "WithError": false,
+         ...
+         "Devices":[…]
+      }
+   }
+}
+Se devuelve un campo de Error y un listado 
+de todos los dispositivos del sistema con 
+información asociada.
+El campo principal es WithError, que tiene 
+dos valores posibles:
+• true: CashDro o alguno de sus 
+dispositivos está en situación de 
+error.
+• false: No hay ningún error en el 
+sistema.
+6.6. Consulta de operaciones entre dos fechas
+Para obtener el listado de operaciones entre dos fechas es necesario llamar al web service
+de la siguiente forma:
+HOST Mensajes CASHDRO
+Llamada
+Web service
+https://<ip>/Cashdro3WS/index3.php?
+operation=askMovements&name=<name>&password=<pas
+sword>&fromDate=<fromDate>&toDate=<toDate>&group=<g
+roup>&operationType=[{“Id”:<Id>},{“Id”:<Id2>},...]
+Respuesta
+Web service{
+    "code":<code>,
+    "response": {
+        "errorMessage": "none",
+        "operation": {
+            "movements": { … }
+Operaciones y consultas sin movimiento de efectivo | 156
+
+
+===== PAGE 164 =====
+        }}}
+Parámetros de 
+la llamada
+Descripción
+<ip> IP asociada al CashDro
+<name> Usuario de CashDro (Ej: &name=admin).
+<password> Contraseña asociada al usuario indicado en <name>.
+<fromDate> Fecha  de  inicio  del  periodo  de  tiempo  que  queremos
+consultar.
+<toDate> Fecha de fin del periodo de tiempo que queremos consultar.
+<group> Booleano, si se indica true los datos se agrupan, si se indica
+false, se listan todas las operaciones, una a una.
+<Id> Indicador del tipo de operación que se desea consultar. Es
+posible consultar más de un tipo de operación si se indican
+varios valores en la lista “operationType”. 
+Ejemplo: [{“Id”:1},{“Id”:2},.......]
+Id por tipo de operación:
+• Descuadre de niveles: -2
+• Descuadre: -1
+• Carga: 1
+• Retirada: 2
+• Pago: 3
+• Venta: 4
+• Traspaso a casete: 8
+• Retirada casete billetero: 10
+• Retirada casete monedas: 11
+• Inicialización niveles “Coin Dispenser”: 12
+• Test de Impresión: 13
+• Informe de niveles: 15
+• Ingreso: 16
+• Ingreso por importe: 17
+• Cambio:18
+Operaciones y consultas sin movimiento de efectivo | 157
+
+

@@ -1,0 +1,20 @@
+.shell {
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .shell {
+    width: min(100vw, 560px);
+    max-width: 560px;
+    border-inline: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+  }
+}

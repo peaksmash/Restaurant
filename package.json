@@ -1,0 +1,22 @@
+{
+  "name": "restaurant-kiosk-platform",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "concurrently -k --names \"server,kiosk,admin,qr-pedidos,orders,artemis\" \"npm run dev:server\" \"npm run dev:kiosk\" \"npm run dev:admin\" \"npm run dev:qr-pedidos\" \"npm run dev:orders\" \"npm run dev:artemis\"",
+    "dev:artemis": "node tools/artemis-mock-server/server.mjs",
+    "dev:server": "cd apps/local-server && npm run dev",
+    "dev:kiosk": "cd apps/kiosk-web && npm run dev",
+    "dev:admin": "cd apps/admin-web && npm run dev",
+    "dev:qr-pedidos": "cd apps/qr-pedidos && npm run dev",
+    "dev:orders": "cd apps/orders && npm run dev",
+    "dev:frontends": "concurrently -k --names \"kiosk,admin,qr-pedidos,orders\" \"npm run dev:kiosk\" \"npm run dev:admin\" \"npm run dev:qr-pedidos\" \"npm run dev:orders\""
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

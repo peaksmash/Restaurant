@@ -1,0 +1,17 @@
+{
+  "name": "kiosk-web",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 3000"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest",
+    "typescript": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "@kiosk/types": "0.1.0"
+  },
+  "devDependencies": {}
+}

@@ -1,0 +1,25 @@
+{
+  "restaurantName": "Jose Ranea Location",
+  "kioskId": "barcelona-kiosk-01",
+  "lastApp": {
+    "token": "PUT_LAST_TOKEN_HERE",
+    "organizationId": "1904a660-213a-49f9-9152-6d52c9c3527a",
+    "locationId": "f9415b14-2ae1-439f-9693-812d5ac9b0ef",
+    "brandId": "73706fb0-621b-4ab8-92c3-5ccdd63d2d18",
+    "catalogId": "d765b256-cf21-4d1b-b905-e4973fa83dae"
+  },
+  "kiosk": {
+    "theme": "mcdonalds",
+    "source": "Kiosk",
+    "pickupType": "takeAway",
+    "currency": "EUR"
+  },
+  "payments": {
+    "simulated": true,
+    "stripeTerminal": false,
+    "cashdro": false
+  },
+  "printer": {
+    "enabled": false
+  }
+}

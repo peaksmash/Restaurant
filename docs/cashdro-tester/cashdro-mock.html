@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CashDro · Simulador Completo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600;700&family=Space+Grotesk:wght@400;500;700;800&display=swap');
+:root{
+  --bg:#060810;--surf:#0c0f1a;--surf2:#121625;--border:#1c2035;
+  --green:#00e676;--blue:#448aff;--orange:#ff9100;--red:#ff5252;--purple:#ea80fc;
+  --yellow:#ffd740;--text:#dde4f0;--muted:#5c6480;--code:#080b14;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;min-height:100vh;display:flex;flex-direction:column;}
+
+/* TOPBAR */
+.topbar{background:var(--surf);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.logo{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:16px;color:var(--green);letter-spacing:-1px;}
+.logo span{color:var(--text);}
+.badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:1px;}
+.badge.mock{background:var(--orange);color:#000;}
+.badge.sim{background:var(--blue);color:#fff;}
+.conn-block{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.conn-block input{background:var(--code);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:11px;width:140px;}
+.conn-block label{font-size:10px;color:var(--muted);}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3};}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:290px 1fr;flex:1;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{background:var(--surf);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;gap:0;}
+.nav-section{padding:10px 14px 4px;font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;border-top:1px solid var(--border);}
+.nav-section:first-child{border-top:none;}
+.nav-btn{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;border:none;background:none;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:11px;width:100%;text-align:left;border-left:2px solid transparent;transition:all .15s;}
+.nav-btn:hover{background:var(--surf2);color:var(--text);}
+.nav-btn.active{background:var(--surf2);color:var(--green);border-left-color:var(--green);}
+.nav-btn .type-badge{font-size:9px;margin-left:auto;padding:1px 5px;border-radius:3px;}
+.t-venta{background:rgba(0,230,118,.15);color:var(--green);}
+.t-pago{background:rgba(68,138,255,.15);color:var(--blue);}
+.t-ingreso{background:rgba(255,145,0,.15);color:var(--orange);}
+.t-retirada{background:rgba(255,82,82,.15);color:var(--red);}
+.t-consulta{background:rgba(234,128,252,.15);color:var(--purple);}
+.t-carga{background:rgba(255,215,64,.15);color:var(--yellow);}
+
+/* MACHINE VISUAL */
+.machine-panel{padding:14px;border-bottom:1px solid var(--border);}
+.machine{background:var(--surf2);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.machine-top{background:linear-gradient(135deg,#1a2040,#0f1428);padding:14px;text-align:center;border-bottom:1px solid var(--border);}
+.machine-brand{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:800;color:var(--green);letter-spacing:1px;}
+.machine-model{font-size:9px;color:var(--muted);margin-top:2px;}
+.machine-screen{background:#000;min-height:110px;padding:14px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;transition:all .3s;position:relative;}
+.machine-screen.idle{border:1px solid #1a1a1a;}
+.machine-screen.busy{border:1px solid var(--yellow);box-shadow:0 0 20px rgba(255,215,64,.1);}
+.machine-screen.ok{border:1px solid var(--green);box-shadow:0 0 20px rgba(0,230,118,.1);}
+.machine-screen.err{border:1px solid var(--red);box-shadow:0 0 20px rgba(255,82,82,.1);}
+.screen-ico{font-size:26px;}
+.screen-line1{font-size:12px;color:var(--text);text-align:center;line-height:1.4;}
+.screen-amount{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:var(--green);}
+.screen-state{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.machine-leds{display:flex;gap:6px;padding:8px 14px;border-top:1px solid var(--border);}
+.led{width:8px;height:8px;border-radius:50%;background:var(--muted);}
+.led.on-green{background:var(--green);box-shadow:0 0 6px var(--green);}
+.led.on-yellow{background:var(--yellow);box-shadow:0 0 6px var(--yellow);}
+.led.on-red{background:var(--red);box-shadow:0 0 6px var(--red);}
+
+/* CONFIG */
+.cfg-panel{padding:12px 14px;border-bottom:1px solid var(--border);}
+.cfg-title{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+.cfg-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.cfg-row label{font-size:10px;color:var(--muted);min-width:85px;}
+select,input[type=range]{background:var(--code);border:1px solid var(--border);color:var(--text);padding:4px 7px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:10px;flex:1;}
+.val-badge{font-size:10px;color:var(--orange);min-width:30px;text-align:right;}
+
+/* LOG */
+.log-panel{flex:1;padding:10px 14px;overflow-y:auto;max-height:180px;}
+.log-title{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
+.log-entry{font-size:9px;padding:3px 0;border-bottom:1px solid #0d1020;display:grid;grid-template-columns:52px 45px 1fr 30px;gap:4px;align-items:center;}
+.lt{color:var(--muted);}
+.lm{color:var(--yellow);}
+.lp{color:var(--blue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lc{text-align:right;}
+.lc.ok{color:var(--green);}
+.lc.err{color:var(--red);}
+
+/* MAIN CONTENT */
+.content{overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;}
+
+/* STATUS BAR */
+.status-bar{background:var(--surf);border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;gap:24px;flex-wrap:wrap;align-items:center;}
+.st-item{display:flex;flex-direction:column;gap:2px;}
+.st-label{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.st-value{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;}
+.sv-ok{color:var(--green);}
+.sv-busy{color:var(--yellow);}
+.sv-err{color:var(--red);}
+.sv-muted{color:var(--muted);}
+
+/* PANEL */
+.panel{background:var(--surf);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:none;}
+.panel.active{display:block;}
+.panel-header{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.ph-method{font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--green);color:#000;}
+.ph-url{font-size:11px;color:var(--blue);flex:1;word-break:break-all;}
+.ph-name{font-size:11px;color:var(--muted);}
+.panel-body{padding:16px;display:flex;flex-direction:column;gap:10px;}
+
+/* FLOW STEPS */
+.flow{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;padding:4px 0;}
+.step{background:var(--surf2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;display:flex;align-items:flex-start;gap:8px;}
+.step-num{font-size:9px;background:var(--blue);color:#000;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.step-txt{font-size:10px;color:var(--muted);line-height:1.5;}
+.step.active{border-color:var(--green);}
+.step.active .step-num{background:var(--green);}
+
+/* FIELDS */
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-size:10px;color:var(--muted);}
+.field input,.field select{background:var(--code);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;transition:border-color .2s;}
+.field input:focus,.field select:focus{outline:none;border-color:var(--green);}
+.field-hint{font-size:9px;color:var(--muted);margin-top:-2px;}
+
+/* BUTTONS */
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+.btn{padding:8px 16px;border:none;border-radius:5px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:11px;cursor:pointer;transition:all .15s;letter-spacing:.3px;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-green{background:var(--green);color:#000;}
+.btn-green:hover:not(:disabled){background:#00ff8a;transform:translateY(-1px);}
+.btn-blue{background:var(--blue);color:#fff;}
+.btn-blue:hover:not(:disabled){background:#5c9cff;}
+.btn-orange{background:var(--orange);color:#000;}
+.btn-orange:hover:not(:disabled){background:#ffab40;}
+.btn-red{background:var(--red);color:#fff;}
+.btn-red:hover:not(:disabled){background:#ff6e6e;}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.btn-ghost:hover:not(:disabled){border-color:var(--blue);color:var(--blue);}
+
+/* RESULT */
+.result{background:var(--code);border:1px solid var(--border);border-radius:5px;padding:12px;font-size:10px;line-height:1.7;white-space:pre-wrap;word-break:break-all;max-height:260px;overflow-y:auto;display:none;}
+.result.show{display:block;}
+.result.ok{border-left:3px solid var(--green);}
+.result.err{border-left:3px solid var(--red);}
+.result-label{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+
+/* QUICK COPY */
+.url-display{background:var(--code);border:1px solid var(--border);border-radius:5px;padding:10px 12px;font-size:10px;color:var(--blue);word-break:break-all;line-height:1.6;position:relative;}
+.url-label{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+
+/* LEVELS VISUAL */
+.levels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;}
+.level-item{background:var(--surf2);border:1px solid var(--border);border-radius:5px;padding:8px 6px;text-align:center;}
+.level-val{font-size:9px;color:var(--muted);}
+.level-denom{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:11px;color:var(--text);margin:2px 0;}
+.level-bar{height:4px;background:var(--border);border-radius:2px;margin-top:4px;overflow:hidden;}
+.level-fill{height:100%;border-radius:2px;background:var(--green);transition:width .5s;}
+.level-count{font-size:10px;color:var(--green);margin-top:2px;}
+
+/* INLINE SECTION HEADER */
+.section-hdr{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;padding:4px 0 8px;border-bottom:1px solid var(--border);margin-bottom:8px;}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">Cash<span>Dro</span></div>
+  <div class="badge mock">MOCK</div>
+  <div class="badge sim">SIMULADOR</div>
+  <div class="conn-block">
+    <label>IP simulada:</label>
+    <input type="text" id="cfgIP" value="192.168.13.168" placeholder="IP del CashDro">
+    <label>Usuario:</label>
+    <input type="text" id="cfgUser" value="admin" style="width:80px;">
+    <label>Pass:</label>
+    <input type="text" id="cfgPass" value="1234" style="width:60px;">
+    <div class="dot"></div>
+  </div>
+</div>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <!-- Machine visual -->
+  <div class="machine-panel">
+    <div class="machine">
+      <div class="machine-top">
+        <div class="machine-brand">● CASHDRO ●</div>
+        <div class="machine-model">Serie 3 · Web Service v4.14</div>
+      </div>
+      <div class="machine-screen idle" id="machineScreen">
+        <div class="screen-ico">💵</div>
+        <div class="screen-line1" id="screenLine1">En espera</div>
+        <div class="screen-state" id="screenState">LIBRE · OPERATIVO</div>
+      </div>
+      <div class="machine-leds">
+        <div class="led on-green" id="led1" title="Potencia"></div>
+        <div class="led on-green" id="led2" title="Red"></div>
+        <div class="led" id="led3" title="Operación"></div>
+        <div class="led" id="led4" title="Error"></div>
+        <div style="margin-left:auto;font-size:9px;color:var(--muted)">v22.01.21.22</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Config -->
+  <div class="cfg-panel">
+    <div class="cfg-title">⚙ Config del simulador</div>
+    <div class="cfg-row">
+      <label>Resultado op.</label>
+      <select id="cfgResult">
+        <option value="ok">✅ Éxito</option>
+        <option value="busy">⚠ CashDro ocupado</option>
+        <option value="auth">🔐 Error autenticación</option>
+        <option value="offline">❌ Sin servicio</option>
+      </select>
+    </div>
+    <div class="cfg-row">
+      <label>Delay (seg)</label>
+      <input type="range" id="cfgDelay" min="1" max="8" value="2" oninput="document.getElementById('dval').textContent=this.value+'s'">
+      <span class="val-badge" id="dval">2s</span>
+    </div>
+    <div class="cfg-row">
+      <label>Estado máquina</label>
+      <select id="cfgMachineState">
+        <option value="ok">✅ Operativa</option>
+        <option value="warn">⚠ Con alertas</option>
+        <option value="error">❌ Con error</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Navegación -->
+  <div class="nav-section">Transacciones efectivo</div>
+  <button class="nav-btn active" onclick="showPanel('venta')">💳 Venta<span class="type-badge t-venta">type=4</span></button>
+  <button class="nav-btn" onclick="showPanel('pago')">💰 Pago<span class="type-badge t-pago">type=3</span></button>
+  <button class="nav-btn" onclick="showPanel('ingreso')">📥 Ingreso<span class="type-badge t-ingreso">type=16</span></button>
+  <button class="nav-btn" onclick="showPanel('ingresoimp')">📥 Ingreso/importe<span class="type-badge t-ingreso">type=17</span></button>
+  <button class="nav-btn" onclick="showPanel('carga')">🔋 Carga<span class="type-badge t-carga">type=1</span></button>
+  <button class="nav-btn" onclick="showPanel('retirada')">📤 Retirada<span class="type-badge t-retirada">type=2</span></button>
+  <button class="nav-btn" onclick="showPanel('traspaso')">🗄 Traspaso casete<span class="type-badge t-retirada">type=8</span></button>
+  <button class="nav-btn" onclick="showPanel('retcasb')">💵 Ret. casete bill.<span class="type-badge t-retirada">type=10</span></button>
+  <button class="nav-btn" onclick="showPanel('retcasm')">🪙 Ret. casete mon.<span class="type-badge t-retirada">type=11</span></button>
+
+  <div class="nav-section">Consultas sin efectivo</div>
+  <button class="nav-btn" onclick="showPanel('dotest')">🔌 Verificar conexión<span class="type-badge t-consulta">doTest</span></button>
+  <button class="nav-btn" onclick="showPanel('niveles')">📊 Niveles efectivo<span class="type-badge t-consulta">getPieces</span></button>
+  <button class="nav-btn" onclick="showPanel('alertas')">🚨 Alertas<span class="type-badge t-consulta">getAlerts</span></button>
+  <button class="nav-btn" onclick="showPanel('diagnosis')">🏥 Estado máquina<span class="type-badge t-consulta">getDiagnosis</span></button>
+  <button class="nav-btn" onclick="showPanel('pendientes')">📋 Op. pendientes<span class="type-badge t-consulta">askPending</span></button>
+  <button class="nav-btn" onclick="showPanel('movimientos')">📅 Movimientos<span class="type-badge t-consulta">askMovements</span></button>
+  <button class="nav-btn" onclick="showPanel('enejecucion')">⚡ Op. en ejecución<span class="type-badge t-consulta">askRunning</span></button>
+
+  <!-- Log -->
+  <div class="log-panel">
+    <div class="log-title">📋 Log llamadas</div>
+    <div id="logBox"></div>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- STATUS -->
+  <div class="status-bar">
+    <div class="st-item"><span class="st-label">Estado</span><span class="st-value sv-ok" id="stEstado">LIBRE</span></div>
+    <div class="st-item"><span class="st-label">OperationId activo</span><span class="st-value sv-muted" id="stOpId">—</span></div>
+    <div class="st-item"><span class="st-label">Fase</span><span class="st-value sv-muted" id="stFase">—</span></div>
+    <div class="st-item"><span class="st-label">Último importe</span><span class="st-value sv-muted" id="stImporte">—</span></div>
+    <div class="st-item"><span class="st-label">Importada</span><span class="st-value sv-muted" id="stImportada">—</span></div>
+    <div class="st-item"><span class="st-label">WithError</span><span class="st-value sv-ok" id="stError">false</span></div>
+  </div>
+
+  <!-- ══════════════════════════════════ PANELS ══════════════════════════════════ -->
+
+  <!-- VENTA -->
+  <div class="panel active" id="panel-venta">
+    <div class="panel-header">
+      <span class="ph-method">GET</span>
+      <span class="ph-url">https://&lt;ip&gt;/Cashdro3WS/index3.php?operation=startOperation&amp;type=4&amp;...</span>
+      <span class="ph-name">Venta (type=4)</span>
+    </div>
+    <div class="panel-body">
+      <div class="section-hdr">Flujo de la transacción</div>
+      <div class="flow">
+        <div class="step" id="vstep1"><div class="step-num">1</div><div class="step-txt"><b>startOperation</b><br>type=4 · amount</div></div>
+        <div class="step" id="vstep2"><div class="step-num">2</div><div class="step-txt"><b>acknowledgeOperationId</b><br>Confirmar ejecución</div></div>
+        <div class="step" id="vstep3"><div class="step-num">3</div><div class="step-txt"><b>askOperation</b><br>Consultar estado (polling)</div></div>
+        <div class="step" id="vstep4"><div class="step-num">4</div><div class="step-txt"><b>setOperationImported</b><br>Marcar como importada</div></div>
+      </div>
+
+      <div class="section-hdr">Paso 1 · Iniciar venta</div>
+      <div class="field-grid">
+        <div class="field"><label>amount (×100)</label><input type="text" id="v_amount" value="1825"><div class="field-hint">1825 = 18,25 €</div></div>
+        <div class="field"><label>posid</label><input type="text" id="v_posid" value="terminal1"></div>
+        <div class="field"><label>posuser</label><input type="text" id="v_posuser" value="María"></div>
+        <div class="field"><label>aliasid (opcional)</label><input type="text" id="v_alias" value="V0001"></div>
+      </div>
+      <div class="url-label">URL generada:</div>
+      <div class="url-display" id="v_url1">—</div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="step_start('venta',4,'v_amount','v_posid','v_posuser','v_alias')">▶ 1. startOperation</button>
+      </div>
+      <div class="result-label">Respuesta:</div>
+      <div class="result" id="res_v1"></div>
+
+      <div class="section-hdr">Paso 2 · Confirmar ejecución</div>
+      <div class="btn-row">
+        <button class="btn btn-blue" onclick="step_ack()">▶ 2. acknowledgeOperationId</button>
+      </div>
+      <div class="result" id="res_v2"></div>
+
+      <div class="section-hdr">Paso 3 · Consultar estado (polling)</div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="step_ask('res_v3')">🔄 3. askOperation</button>
+        <button class="btn btn-ghost" onclick="step_finish(1)">✓ finishOperation (finalizar)</button>
+        <button class="btn btn-red" onclick="step_finish(2)">✕ finishOperation (cancelar)</button>
+      </div>
+      <div class="result" id="res_v3"></div>
+
+      <div class="section-hdr">Paso 4 · Importar transacción</div>
+      <div class="btn-row">
+        <button class="btn btn-orange" onclick="step_import('res_v4')">✔ 4. setOperationImported</button>
+      </div>
+      <div class="result" id="res_v4"></div>
+    </div>
+  </div>
+
+  <!-- PAGO -->
+  <div class="panel" id="panel-pago">
+    <div class="panel-header">
+      <span class="ph-method">GET</span>
+      <span class="ph-url">https://&lt;ip&gt;/Cashdro3WS/index3.php?operation=startOperation&amp;type=3&amp;...</span>
+      <span class="ph-name">Pago (type=3)</span>
+    </div>
+    <div class="panel-body">
+      <div class="section-hdr">Paso 1 · Iniciar pago (dispensar efectivo)</div>
+      <div class="field-grid">
+        <div class="field"><label>amount (×100)</label><input type="text" id="p_amount" value="1000"><div class="field-hint">1000 = 10,00 €</div></div>
+        <div class="field"><label>posid</label><input type="text" id="p_posid" value="terminal1"></div>
+        <div class="field"><label>posuser</label><input type="text" id="p_posuser" value="Juan"></div>
+        <div class="field"><label>aliasid</label><input type="text" id="p_alias" value="P0001"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="step_start('pago',3,'p_amount','p_posid','p_posuser','p_alias')">▶ 1. startOperation</button>
+        <button class="btn btn-blue" onclick="step_ack()">▶ 2. acknowledgeOperationId</button>
+      </div>
+      <div class="result" id="res_p1"></div>
+
+      <div class="section-hdr">Paso 3 · Consultar / Finalizar</div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="step_ask('res_p3')">🔄 askOperation</button>
+        <button class="btn btn-orange" onclick="step_import('res_p4')">✔ setOperationImported</button>
+        <button class="btn btn-red" onclick="step_finish(2)">✕ Cancelar</button>
+      </div>
+      <div class="result" id="res_p3"></div>
+      <div class="result" id="res_p4"></div>
+    </div>
+  </div>
+
+  <!-- INGRESO -->
+  <div class="panel" id="panel-ingreso">
+    <div class="panel-header">
+      <span class="ph-method">GET</span>
+      <span class="ph-url">https://&lt;ip&gt;/Cashdro3WS/index3.php?operation=startOperation&amp;type=16&amp;...</span>
+      <span class="ph-name">Ingreso libre (type=16)</span>
+    </div>
+    <div class="panel-body">
+      <div class="field-grid">
+        <div class="field"><label>posid</label><input type="text" id="i_posid" value="terminal1"></div>
+        <div class="field"><label>posuser</label><input type="text" id="i_posuser" value="María"></div>
+        <div class="field"><label>aliasid</label><input type="text" id="i_alias" value="I0001"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="step_start('ingreso',16,null,'i_posid','i_posuser','i_alias')">▶ 1. startOperation</button>
+        <button class="btn btn-blue" onclick="step_ack()">▶ 2. acknowledgeOperationId</button>
+        <button class="btn btn-ghost" onclick="step_ask('res_i3')">🔄 askOperation</button>
+        <button class="btn btn-ghost" onclick="step_finish(1)">✓ finishOperation</button>
+        <button class="btn btn-orange" onclick="step_import('res_i4')">✔ setOperationImported</button>
+      </div>
+      <div class="result" id="res_i3"></div>
+      <div class="result" id="res_i4"></div>
+    </div>
+  </div>
+
+  <!-- INGRESO POR IMPORTE -->
+  <div class="panel" id="panel-ingresoimp">
+    <div class="panel-header">
+      <span class="ph-method">GET</span>
+      <span class="ph-url">https://&lt;ip&gt;/Cashdro3WS/index3.php?operation=startOperation&amp;type=17&amp;...</span>
+      <span class="ph-name">Ingreso por importe (type=17)</span>
+    </div>
+    <div class="panel-body">
+      <div class="field-grid">
+        <div class="field"><label>amount (×100)</label><input type="text" id="ii_amount" value="1000"></div>
+        <div class="field"><label>posid</label><input type="text" id="ii_posid" value="terminal1"></div>
+        <div class="field"><label>posuser</label><input type="text" id="ii_posuser" value="María"></div>
+        <div class="field"><label>aliasid</label><input type="text" id="ii_alias" value="II0001"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="step_start('ingresoimp',17,'ii_amount','ii_posid','ii_posuser','ii_alias')">▶ 1. startOperation</button>
+        <button class="btn btn-blue" onclick="step_ack()">▶ 2. acknowledgeOperationId</button>
+        <button class="btn btn-ghost" onclick="step_ask('res_ii3')">🔄 askOperation</button>
+        <button class="btn btn-ghost" onclick="step_finish(1)">✓ finishOperation</button>
+        <button class="btn btn-orange" onclick="step_import('res_ii4')">✔ setOperationImported</button>
+      </div>
+      <div class="result" id="res_ii3"></div>
+      <div class="result" id="res_ii4"></div>
+    </div>
+  </div>
+
+  <!-- CARGA -->
+  <div class="panel" id="panel-carga">
+    <div class="panel-header">
+      <span class="ph-method">GET</span>
+      <span class="ph-url">...startOperation&amp;type=1</span>
+      <span class="ph-name">Carga (type=1) — Rellenar máquina</span>
+    </div>
+    <div class="panel-body">
+      <div class="field-grid">
+        <div class="field"><label>posid</label><input type="text" id="c_posid" value="terminal1"></div>
+        <div class="field"><label>posuser</label><input type="text" id="c_posuser" value="Técnico"></div>
+        <div class="field"><label>aliasid</label><input type="text" id="c_alias" value="C0001"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="step_start('carga',1,null,'c_posid','c_posuser','c_alias')">▶ 1. startOperation</button>
+        <button class="btn btn-blue" onclick="step_ack()">▶ 2. acknowledgeOperationId</button>
+        <button class="btn btn-ghost" onclick="step_ask('res_c3')">🔄 askOperation</button>
+        <button class="btn btn-ghost" onclick="step_finish(1)">✓ finishOperation</button>
+        <button class="btn btn-orange" onclick="step_import('res_c4')">✔ setOperationImported</button>
+      </div>
+      <div class="result" id="res_c3"></div>
+      <div class="result" id="res_c4"></div>
+    </div>
+  </div>
+
+  <!-- RETIRADA -->
+  <div class="panel" id="panel-retirada">
+    <div class="panel-header">
+      <span class="ph-method">GET</span>
+      <span class="ph-url">...startOperation&amp;type=2</span>
+      <span class="ph-name">Retirada (type=2) — Extraer efectivo</span>
+    </div>
+    <div class="panel-body">
+      <div class="field-grid">
+        <div class="field"><label>posid</label><input type="text" id="r_posid" value="terminal1"></div>
+        <div class="field"><label>posuser</label><input type="text" id="r_posuser" value="María"></div>
+        <div class="field"><label>aliasid</label><input type="text" id="r_alias" value="R0001"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="step_start('retirada',2,null,'r_posid','r_posuser','r_alias')">▶ 1. startOperation</button>
+        <button class="btn btn-blue" onclick="step_ack()">▶ 2. acknowledgeOperationId</button>
+        <button class="btn btn-ghost" onclick="step_ask('res_r3')">🔄 askOperation</button>
+        <button class="btn btn-ghost" onclick="step_finish(1)">✓ finishOperation</button>
+        <button class="btn btn-red" onclick="step_finish(2)">✕ Cancelar</button>
+        <button class="btn btn-orange" onclick="step_import('res_r4')">✔ setOperationImported</button>
+      </div>
+      <div class="result" id="res_r3"></div>
+      <div class="result" id="res_r4"></div>
+    </div>
+  </div>
+
+  <!-- TRASPASO CASETE -->
+  <div class="panel" id="panel-traspaso">
+    <div class="panel-header">
+      <span class="ph-method">GET</span>
+      <span class="ph-url">...startOperation&amp;type=8</span>
+      <span class="ph-name">Traspaso a casete (type=8)</span>
+    </div>
+    <div class="panel-body">
+      <div class="field-grid">
+        <div class="field"><label>posid</label><input type="text" id="tc_posid" value="terminal1"></div>
+        <div class="field"><label>posuser</label><input type="text" id="tc_posuser" value="María"></div>
+        <div class="field"><label>aliasid</label><input type="text" id="tc_alias" value="TC0001"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="step_start('traspaso',8,null,'tc_posid','tc_posuser','tc_alias')">▶ 1. startOperation</button>
+        <button class="btn btn-blue" onclick="step_ack()">▶ 2. acknowledgeOperationId</button>
+        <button class="btn btn-ghost" onclick="step_ask('res_tc3')">🔄 askOperation</button>
+        <button class="btn btn-ghost" onclick="step_finish(4)">✓ finishOperation (ejecutar traspaso)</button>
+        <button class="btn btn-red" onclick="step_finish(3)">✕ Cancelar traspaso</button>
+        <button class="btn btn-orange" onclick="step_import('res_tc4')">✔ setOperationImported</button>
+      </div>
+      <div class="result" id="res_tc3"></div>
+      <div class="result" id="res_tc4"></div>
+    </div>
+  </div>
+
+  <!-- RETIRADA CASETE BILLETES -->
+  <div class="panel" id="panel-retcasb">
+    <div class="panel-header">
+      <span class="ph-method">GET</span>
+      <span class="ph-url">...startOperation&amp;type=10</span>
+      <span class="ph-name">Retirada casete billetes (type=10)</span>
+    </div>
+    <div class="panel-body">
+      <div class="field-grid">
+        <div class="field"><label>posid</label><input type="text" id="rcb_posid" value="terminal1"></div>
+        <div class="field"><label>posuser</label><input type="text" id="rcb_posuser" value="María"></div>
+        <div class="field"><label>aliasid</label><input type="text" id="rcb_alias" value="RCB0001"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="step_start('retcasb',10,null,'rcb_posid','rcb_posuser','rcb_alias')">▶ 1. startOperation</button>
+        <button class="btn btn-blue" onclick="step_ack()">▶ 2. acknowledgeOperationId</button>
+        <button class="btn btn-ghost" onclick="step_ask('res_rcb3')">🔄 askOperation</button>
+        <button class="btn btn-orange" onclick="step_import('res_rcb4')">✔ setOperationImported</button>
+      </div>
+      <div class="result" id="res_rcb3"></div>
+      <div class="result" id="res_rcb4"></div>
+    </div>
+  </div>
+
+  <!-- RETIRADA CASETE MONEDAS -->
+  <div class="panel" id="panel-retcasm">
+    <div class="panel-header">
+      <span class="ph-method">GET</span>
+      <span class="ph-url">...startOperation&amp;type=11</span>
+      <span class="ph-name">Retirada casete monedas (type=11)</span>
+    </div>
+    <div class="panel-body">
+      <div class="field-grid">
+        <div class="field"><label>posid</label><input type="text" id="rcm_posid" value="terminal1"></div>
+        <div class="field"><label>posuser</label><input type="text" id="rcm_posuser" value="María"></div>
+        <div class="field"><label>aliasid</label><input type="text" id="rcm_alias" value="RCM0001"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="step_start('retcasm',11,null,'rcm_posid','rcm_posuser','rcm_alias')">▶ 1. startOperation</button>
+        <button class="btn btn-blue" onclick="step_ack()">▶ 2. acknowledgeOperationId</button>
+        <button class="btn btn-ghost" onclick="step_ask('res_rcm3')">🔄 askOperation</button>
+        <button class="btn btn-orange" onclick="step_import('res_rcm4')">✔ setOperationImported</button>
+      </div>
+      <div class="result" id="res_rcm3"></div>
+      <div class="result" id="res_rcm4"></div>
+    </div>
+  </div>
+
+  <!-- DOTEST -->
+  <div class="panel" id="panel-dotest">
+    <div class="panel-header">
+      <span class="ph-method">GET</span>
+      <span class="ph-url">https://&lt;ip&gt;/Cashdro3WS/index3.php?operation=doTest&amp;name=&lt;name&gt;&amp;password=&lt;pass&gt;</span>
+      <span class="ph-name">Verificar conexión</span>
+    </div>
+    <div class="panel-body">
+      <div class="url-label">URL que se generaría:</div>
+      <div class="url-display" id="dotestUrl">https://192.168.13.168/Cashdro3WS/index3.php?operation=doTest&amp;name=admin&amp;password=1234</div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="do_doTest()">▶ doTest — Verificar conexión</button>
+      </div>
+      <div class="result-label">Respuesta simulada:</div>
+      <div class="result" id="res_dotest"></div>
+    </div>
+  </div>
+
+  <!-- NIVELES -->
+  <div class="panel" id="panel-niveles">
+    <div class="panel-header">
+      <span class="ph-method">GET</span>
+      <span class="ph-url">...operation=getPiecesCurrency&amp;currencyId=EUR&amp;includeLevels=1&amp;...</span>
+      <span class="ph-name">Niveles de efectivo</span>
+    </div>
+    <div class="panel-body">
+      <div class="section-hdr">Niveles actuales (simulados)</div>
+      <div class="levels-grid" id="levelsGrid"></div>
+      <div class="btn-row" style="margin-top:8px;">
+        <button class="btn btn-green" onclick="do_niveles()">▶ getPiecesCurrency</button>
+        <button class="btn btn-ghost" onclick="randomizeLevels()">🎲 Aleatorizar niveles</button>
+      </div>
+      <div class="result" id="res_niveles"></div>
+    </div>
+  </div>
+
+  <!-- ALERTAS -->
+  <div class="panel" id="panel-alertas">
+    <div class="panel-header">
+      <span class="ph-method">GET</span>
+      <span class="ph-url">...operation=getAlerts</span>
+      <span class="ph-name">Alertas de denominaciones</span>
+    </div>
+    <div class="panel-body">
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="do_alertas()">▶ getAlerts</button>
+      </div>
+      <div class="result" id="res_alertas"></div>
+    </div>
+  </div>
+
+  <!-- DIAGNOSIS -->
+  <div class="panel" id="panel-diagnosis">
+    <div class="panel-header">
+      <span class="ph-method">GET</span>
+      <span class="ph-url">...operation=getDiagnosis</span>
+      <span class="ph-name">Estado del equipo</span>
+    </div>
+    <div class="panel-body">
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="do_diagnosis()">▶ getDiagnosis</button>
+      </div>
+      <div class="result" id="res_diagnosis"></div>
+    </div>
+  </div>
+
+  <!-- PENDIENTES -->
+  <div class="panel" id="panel-pendientes">
+    <div class="panel-header">
+      <span class="ph-method">GET</span>
+      <span class="ph-url">...operation=askPendingOperations</span>
+      <span class="ph-name">Operaciones pendientes de importar</span>
+    </div>
+    <div class="panel-body">
+      <div class="field-grid">
+        <div class="field"><label>posid</label><input type="text" id="pen_posid" value="terminal1"></div>
+        <div class="field"><label>importManualOps</label><select id="pen_manual"><option value="true">true</option><option value="false">false</option></select></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="do_pendientes()">▶ askPendingOperations</button>
+      </div>
+      <div class="result" id="res_pendientes"></div>
+    </div>
+  </div>
+
+  <!-- MOVIMIENTOS -->
+  <div class="panel" id="panel-movimientos">
+    <div class="panel-header">
+      <span class="ph-method">GET</span>
+      <span class="ph-url">...operation=askMovements</span>
+      <span class="ph-name">Movimientos entre fechas</span>
+    </div>
+    <div class="panel-body">
+      <div class="field-grid">
+        <div class="field"><label>fromDate</label><input type="text" id="mv_from" value="2024-01-01"></div>
+        <div class="field"><label>toDate</label><input type="text" id="mv_to" value="2024-12-31"></div>
+        <div class="field"><label>group</label><select id="mv_group"><option value="false">false (detallado)</option><option value="true">true (agrupado)</option></select></div>
+        <div class="field"><label>Tipo operación</label><select id="mv_type"><option value="4">Venta (4)</option><option value="3">Pago (3)</option><option value="1">Carga (1)</option><option value="2">Retirada (2)</option><option value="16">Ingreso (16)</option><option value="17">Ingreso/importe (17)</option></select></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="do_movimientos()">▶ askMovements</button>
+      </div>
+      <div class="result" id="res_movimientos"></div>
+    </div>
+  </div>
+
+  <!-- EN EJECUCION -->
+  <div class="panel" id="panel-enejecucion">
+    <div class="panel-header">
+      <span class="ph-method">GET</span>
+      <span class="ph-url">...operation=askRunningOperations</span>
+      <span class="ph-name">Operación en ejecución</span>
+    </div>
+    <div class="panel-body">
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="do_enejecucion()">▶ askRunningOperations</button>
+      </div>
+      <div class="result" id="res_enejecucion"></div>
+    </div>
+  </div>
+
+</div><!-- /content -->
+</div><!-- /layout -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  ESTADO GLOBAL
+// ═══════════════════════════════════════════════════════════════
+const ST = {
+  busy: false,
+  opId: null,
+  opCounter: 200,
+  opType: null,
+  opAmount: 0,
+  phase: null,      // null | 'started' | 'acked' | 'finished' | 'imported'
+  stateCode: 'E',   // I Q E F
+  imported: false,
+  withError: false,
+  levels: {}
+};
+
+// Niveles iniciales de efectivo
+const DENOMS_COINS = [1,2,5,10,20,50,100,200];     // céntimos
+const DENOMS_BILLS = [500,1000,2000,5000,10000,20000,50000]; // céntimos
+function initLevels(){
+  DENOMS_COINS.forEach(v=> ST.levels['c_'+v]={value:v,type:1,recycler:Math.floor(Math.random()*40+5),casete:Math.floor(Math.random()*20)});
+  DENOMS_BILLS.forEach(v=> ST.levels['b_'+v]={value:v,type:2,recycler:Math.floor(Math.random()*20+2),casete:Math.floor(Math.random()*10)});
+}
+initLevels();
+
+// ═══════════════════════════════════════════════════════════════
+//  UTILIDADES
+// ═══════════════════════════════════════════════════════════════
+const ip = ()=>document.getElementById('cfgIP').value||'192.168.13.168';
+const user = ()=>document.getElementById('cfgUser').value||'admin';
+const pass = ()=>document.getElementById('cfgPass').value||'1234';
+const delay = ()=>parseInt(document.getElementById('cfgDelay').value)*1000;
+const cfgResult = ()=>document.getElementById('cfgResult').value;
+const cfgMachine = ()=>document.getElementById('cfgMachineState').value;
+const pad=(n,l=2)=>String(n).padStart(l,'0');
+const fmt=(cents)=>(cents/100).toLocaleString('es-ES',{minimumFractionDigits:2})+' €';
+
+function nextOpId(){ return ++ST.opCounter; }
+
+function fakeAskOperationResponse(state){
+  const amt = ST.opAmount||1825;
+  const isIn = ['venta','ingreso','ingresoimp','carga'].includes(ST.opType);
+  const isPago = ST.opType==='pago'||ST.opType==='retirada'||ST.opType==='retcasb'||ST.opType==='retcasm';
+  const totalin = isIn ? amt + Math.floor(Math.random()*20) : 0;
+  const totalout = isPago ? -amt : (isIn ? -(totalin-amt) : 0);
+  return {
+    code:1,
+    response:{
+      errorMessage:"none",
+      operation:{
+        operation:{
+          operationid: String(ST.opId),
+          state: state,
+          payInProgress: state==='F'?'1':'0',
+          payOutProgress: state==='F'?'1':'0',
+          total: String(amt),
+          totalin: String(totalin),
+          totalout: String(totalout),
+          amountchangenotavailable:'0'
+        },
+        devices:[
+          {type:'1',description:'Validador monedas',pieces:[
+            {value:'1',finishlevelrecycler:12,finishlevelcassette:0},
+            {value:'2',finishlevelrecycler:8,finishlevelcassette:0},
+            {value:'5',finishlevelrecycler:15,finishlevelcassette:0}
+          ]},
+          {type:'2',description:'Reciclador monedas',pieces:[
+            {value:'10',finishlevelrecycler:20,finishlevelcassette:5},
+            {value:'20',finishlevelrecycler:18,finishlevelcassette:3},
+            {value:'50',finishlevelrecycler:10,finishlevelcassette:0},
+            {value:'100',finishlevelrecycler:25,finishlevelcassette:20},
+            {value:'200',finishlevelrecycler:8,finishlevelcassette:2}
+          ]},
+          {type:'3',description:'Billetero',pieces:[
+            {value:'500',finishlevelrecycler:5,finishlevelcassette:0},
+            {value:'1000',finishlevelrecycler:8,finishlevelcassette:2},
+            {value:'2000',finishlevelrecycler:6,finishlevelcassette:0},
+            {value:'5000',finishlevelrecycler:3,finishlevelcassette:1}
+          ]}
+        ],
+        messages:[],
+        withError: cfgMachine()==='error'?'true':'false'
+      }
+    }
+  };
+}
+
+function errResponse(code, msg){
+  return {code, response:{errorMessage: msg}};
+}
+
+function checkAuth(){
+  if(cfgResult()==='auth') return errResponse(-1,'Authentication Failed');
+  return null;
+}
+
+function checkBusy(allowWhenBusy=false){
+  if(ST.busy && !allowWhenBusy && cfgResult()==='busy') return errResponse(-2,'Operation not queued');
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DISPLAY
+// ═══════════════════════════════════════════════════════════════
+function showResult(id, data, ok=true){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.textContent = JSON.stringify(data, null, 2);
+  el.className = 'result show ' + (ok?'ok':'err');
+}
+
+function setScreen(mode, line1, state){
+  const s = document.getElementById('machineScreen');
+  s.className = 'machine-screen '+mode;
+  document.getElementById('screenLine1').textContent = line1;
+  document.getElementById('screenState').textContent = state;
+  document.getElementById('led3').className = 'led '+(mode==='busy'?'on-yellow':mode==='ok'?'on-green':mode==='err'?'on-red':'');
+  document.getElementById('led4').className = 'led '+(mode==='err'?'on-red':'');
+}
+
+function updateStatus(){
+  document.getElementById('stEstado').textContent = ST.busy?'OCUPADO':'LIBRE';
+  document.getElementById('stEstado').className = 'st-value '+(ST.busy?'sv-busy':'sv-ok');
+  document.getElementById('stOpId').textContent = ST.opId||'—';
+  document.getElementById('stOpId').style.color = ST.opId?'var(--green)':'var(--muted)';
+  document.getElementById('stFase').textContent = ST.phase||'—';
+  document.getElementById('stImporte').textContent = ST.opAmount?fmt(ST.opAmount):'—';
+  document.getElementById('stImportada').textContent = ST.imported?'✅ Sí':'—';
+  document.getElementById('stError').textContent = ST.withError?'true':'false';
+  document.getElementById('stError').className = 'st-value '+(ST.withError?'sv-err':'sv-ok');
+}
+
+function addLog(op, path, code){
+  const d=new Date(); const t=pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+  const isErr = parseInt(code)<0;
+  document.getElementById('logBox').insertAdjacentHTML('afterbegin',
+    `<div class="log-entry"><span class="lt">${t}</span><span class="lm">${op}</span><span class="lp" title="${path}">${path}</span><span class="lc ${isErr?'err':'ok'}">${code}</span></div>`);
+}
+
+function buildUrl(operation, extra=''){
+  return `https://${ip()}/Cashdro3WS/index3.php?operation=${operation}&name=${user()}&password=${pass()}${extra}`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  NAVEGACIÓN
+// ═══════════════════════════════════════════════════════════════
+function showPanel(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const p = document.getElementById('panel-'+id);
+  if(p) p.classList.add('active');
+  event.currentTarget.classList.add('active');
+  // actualizar URL doTest si se va a esa sección
+  if(id==='dotest') document.getElementById('dotestUrl').textContent=buildUrl('doTest');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FLUJO TRANSACCIÓN
+// ═══════════════════════════════════════════════════════════════
+async function withDelay(fn){
+  return new Promise(res=>setTimeout(()=>res(fn()), delay()));
+}
+
+// 1. startOperation
+async function step_start(type, typeCode, amountFieldId, posidId, posuserId, aliasId){
+  const err = checkAuth()||checkBusy();
+  if(err){ showResult('res_v1',err,false); addLog('startOperation',`/type=${typeCode}`,err.code); return; }
+  if(cfgResult()==='offline'){ const e=errResponse(-999,'Cashdro service is not running'); showResult('res_v1',e,false); return; }
+
+  const amount = amountFieldId ? parseInt(document.getElementById(amountFieldId)?.value)||1000 : 0;
+  const posid = document.getElementById(posidId)?.value||'terminal1';
+  const posuser = document.getElementById(posuserId)?.value||'user';
+  const alias = document.getElementById(aliasId)?.value||'';
+
+  let params = '';
+  if(amount) params += `&parameters={"amount":"${amount}"}`;
+  const url = buildUrl('startOperation',`&type=${typeCode}&posid=${posid}&posuser=${posuser}&aliasid=${alias}${params}`);
+  const vUrlEl = document.getElementById('v_url1');
+  if(vUrlEl) vUrlEl.textContent = url;
+
+  setScreen('busy','Iniciando operación…',`type=${typeCode} · ${amount?fmt(amount):''}`);
+  ST.busy=true; ST.opType=type; ST.opAmount=amount; ST.imported=false; ST.phase='starting';
+  updateStatus();
+
+  const r = await withDelay(()=>{
+    const id = nextOpId();
+    ST.opId = id; ST.phase='started'; ST.stateCode='I';
+    return {code:1,response:{errorMessage:'none',operation:{operationId:String(id)}}};
+  });
+  showResult('res_v1',r,true);
+  addLog('startOperation',`/type=${typeCode}`,1);
+  setScreen('busy',`Op.${ST.opId} iniciada`,`ESPERANDO ACKNOWLEDGE · type=${typeCode}`);
+  updateStatus();
+}
+
+// 2. acknowledgeOperationId
+async function step_ack(){
+  if(!ST.opId){ showResult('res_v2',errResponse(-2,'Operation not found'),false); return; }
+  const err=checkAuth();
+  if(err){ showResult('res_v2',err,false); return; }
+
+  const r = await withDelay(()=>{ ST.phase='acked'; ST.stateCode='Q'; return {code:1,response:{errorMessage:'none'}}; });
+  showResult('res_v2',r,true);
+  addLog('acknowledgeOperationId',`/opId=${ST.opId}`,1);
+  setScreen('busy','En ejecución…',`OPERACIÓN ${ST.opId} EN COLA`);
+  ST.stateCode='E'; updateStatus();
+
+  // Simular que la máquina pasa a finalizada tras un tiempo
+  setTimeout(()=>{ if(ST.stateCode==='E'){ ST.stateCode='F'; setScreen('ok',`Operación completada`,`Op.${ST.opId} FINALIZADA · ${fmt(ST.opAmount)}`); }}, delay()*1.5);
+}
+
+// 3. askOperation
+async function step_ask(resId){
+  if(!ST.opId){ showResult(resId,errResponse(-2,'Operation not found'),false); return; }
+  const err=checkAuth(); if(err){ showResult(resId,err,false); return; }
+
+  const r = await withDelay(()=>fakeAskOperationResponse(ST.stateCode));
+  showResult(resId,r,true);
+  addLog('askOperation',`/opId=${ST.opId} state=${ST.stateCode}`,1);
+  updateStatus();
+}
+
+// finishOperation
+async function step_finish(type){
+  if(!ST.opId){ alert('Primero inicia una operación (startOperation)'); return; }
+  const url = buildUrl('finishOperation',`&operationId=${ST.opId}&type=${type}`);
+  const r = await withDelay(()=>{
+    ST.phase='finished'; ST.stateCode='F';
+    return {code:1,response:{errorMessage:'none'}};
+  });
+  showResult('res_v3',r,true);
+  addLog('finishOperation',`/opId=${ST.opId}&type=${type}`,1);
+  setScreen(type===2?'err':'ok', type===2?'Cancelada':'Finalizada', `Op.${ST.opId} ${type===2?'CANCELADA':'FINALIZADA'}`);
+  if(type===2){ ST.busy=false; ST.opId=null; ST.phase=null; }
+  updateStatus();
+}
+
+// setOperationImported
+async function step_import(resId){
+  if(!ST.opId){ showResult(resId,errResponse(-2,'Operation not found'),false); return; }
+  const err=checkAuth(); if(err){ showResult(resId,err,false); return; }
+  const r = await withDelay(()=>{
+    ST.imported=true; ST.busy=false; ST.phase='imported';
+    return {code:1,response:{errorMessage:'none'}};
+  });
+  showResult(resId,r,true);
+  addLog('setOperationImported',`/opId=${ST.opId}`,1);
+  setTimeout(()=>{ setScreen('idle','En espera','LIBRE · OPERATIVO'); },1500);
+  updateStatus();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CONSULTAS SIN EFECTIVO
+// ═══════════════════════════════════════════════════════════════
+async function do_doTest(){
+  const err=checkAuth();
+  const r = await withDelay(()=> err ? err : {code:1,response:{errorMessage:'none'}});
+  showResult('res_dotest',r,!err);
+  addLog('doTest','/doTest',err?err.code:1);
+}
+
+function buildPiecesArray(){
+  const pieces=[];
+  Object.values(ST.levels).forEach(l=>{
+    pieces.push({
+      CurrencyId:'EUR', Value:String(l.value), Type:String(l.type),
+      Destination: l.type===1?'1':'2',
+      MinLevel:'5', MaxLevel:'50',
+      DepositLevel: String(l.recycler),
+      MaxPiecesExchange:'10',
+      State: l.recycler<5?'0':l.recycler<8?'2':'-1',
+      Image:'', LevelRecycler:l.recycler, LevelCasete:l.casete
+    });
+  });
+  return pieces;
+}
+
+async function do_niveles(){
+  const r = await withDelay(()=>({
+    code:1, response:{errorMessage:'none', operation:{pieces: buildPiecesArray()}}
+  }));
+  showResult('res_niveles',r,true);
+  addLog('getPiecesCurrency','/getPiecesCurrency',1);
+  renderLevels();
+}
+
+function renderLevels(){
+  const grid = document.getElementById('levelsGrid');
+  grid.innerHTML='';
+  Object.values(ST.levels).forEach(l=>{
+    const denom = l.value>=100 ? (l.value/100).toLocaleString('es-ES',{minimumFractionDigits:0})+' €' : l.value+' ct';
+    const pct = Math.min(100, (l.recycler/50)*100);
+    const col = pct<20?'var(--red)':pct<40?'var(--yellow)':'var(--green)';
+    grid.insertAdjacentHTML('beforeend',`
+      <div class="level-item">
+        <div class="level-val">${l.type===1?'🪙':'💵'}</div>
+        <div class="level-denom">${denom}</div>
+        <div class="level-bar"><div class="level-fill" style="width:${pct}%;background:${col}"></div></div>
+        <div class="level-count">${l.recycler}+${l.casete}</div>
+      </div>`);
+  });
+}
+
+function randomizeLevels(){
+  Object.values(ST.levels).forEach(l=>{ l.recycler=Math.floor(Math.random()*45+1); l.casete=Math.floor(Math.random()*20); });
+  renderLevels();
+}
+
+async function do_alertas(){
+  const machine = cfgMachine();
+  const alerts = machine==='ok' ? [] : [
+    {AlertId:'4',Source:'1',Value:'200',Type:'0',CurrencyId:'EUR'},
+    {AlertId:'1',Source:'2',Value:'500',Type:'5',CurrencyId:'EUR'}
+  ];
+  const r = await withDelay(()=>({code:1,response:{errorMessage:'none',operation:{alerts}}}));
+  showResult('res_alertas',r,true);
+  addLog('getAlerts','/getAlerts',1);
+}
+
+async function do_diagnosis(){
+  const withErr = cfgMachine()==='error';
+  const r = await withDelay(()=>({
+    code:1, response:{errorMessage:'none', operation:{
+      WithError: withErr,
+      Devices:[
+        {Id:'1',Type:'Coin Validator',WithError:false,State:'OK'},
+        {Id:'2',Type:'Coin Recycler',WithError:withErr,State:withErr?'JAM':'OK'},
+        {Id:'3',Type:'Bill Validator',WithError:false,State:'OK'}
+      ]
+    }}
+  }));
+  showResult('res_diagnosis',r,!withErr);
+  addLog('getDiagnosis','/getDiagnosis',1);
+}
+
+async function do_pendientes(){
+  const posid = document.getElementById('pen_posid').value;
+  const manual = document.getElementById('pen_manual').value;
+  const ops = ST.imported ? [] : (ST.opId ? [{OperationId:String(ST.opId)}] : []);
+  const r = await withDelay(()=>({
+    code:1, response:{errorMessage:'none', operation:{pendingOperations:ops}}
+  }));
+  showResult('res_pendientes',r,true);
+  addLog('askPendingOperations',`/terminal=${posid}`,1);
+}
+
+async function do_movimientos(){
+  const from=document.getElementById('mv_from').value;
+  const to=document.getElementById('mv_to').value;
+  const type=document.getElementById('mv_type').value;
+  const r = await withDelay(()=>({
+    code:1, response:{errorMessage:'none', operation:{movements:{
+      totalMovements:3, totalAmount:5500,
+      items:[
+        {operationId:'190',type:parseInt(type),date:from+'T10:00:00',amount:1825,totalin:2000,totalout:-175,user:'María',posid:'terminal1'},
+        {operationId:'191',type:parseInt(type),date:from+'T14:30:00',amount:1000,totalin:1000,totalout:0,user:'Juan',posid:'terminal1'},
+        {operationId:'192',type:parseInt(type),date:to+'T09:15:00',amount:2675,totalin:3000,totalout:-325,user:'María',posid:'terminal2'}
+      ]
+    }}}
+  }));
+  showResult('res_movimientos',r,true);
+  addLog('askMovements',`/${from}→${to}`,1);
+}
+
+async function do_enejecucion(){
+  const running = ST.busy && ST.opId;
+  const r = await withDelay(()=>({
+    code:1, response:{errorMessage:'none', operation:{
+      runningOperation: running ? {
+        operationId:String(ST.opId),
+        type:ST.opType,
+        state:ST.stateCode,
+        posid:'terminal1'
+      } : null
+    }}
+  }));
+  showResult('res_enejecucion',r,true);
+  addLog('askRunningOperations','/askRunningOps',1);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════
+renderLevels();
+updateStatus();
+setScreen('idle','En espera','LIBRE · OPERATIVO');
+</script>
+</body>
+</html>

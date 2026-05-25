@@ -1,0 +1,17 @@
+{
+  "name": "admin-web",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 3002"
+  },
+  "dependencies": {
+    "@kiosk/types": "0.1.0",
+    "@vitejs/plugin-react": "latest",
+    "qrcode": "^1.5.4",
+    "vite": "latest",
+    "typescript": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "restaurantName": "",
+  "lastApp": {
+    "token": "d4172126-7b86-494a-8599-7a7eef98085e",
+    "organizationId": "1904a660-213a-49f9-9152-6d52c9c3527a",
+    "locationId": "f9415b14-2ae1-439f-9693-812d5ac9b0ef",
+    "brandId": "73706fb0-621b-4ab8-92c3-5ccdd63d2d18",
+    "catalogId": "d765b256-cf21-4d1b-b905-e4973fa83dae"
+  },
+  "kiosk": {
+    "source": "Kiosk",
+    "pickupType": "takeAway",
+    "theme": "mcdonalds",
+    "customerFields": {
+      "name": {
+        "enabled": true,
+        "required": true
+      },
+      "phoneNumber": {
+        "enabled": true,
+        "required": false
+      },
+      "email": {
+        "enabled": false,
+        "required": false
+      }
+    },
+    "features": {
+      "modifiers": true,
+      "notes": false,
+      "upselling": false,
+      "printTicket": false
+    },
+    "payment": {
+      "mode": "simulated",
+      "preferredPaymentMethod": "Cash"
+    }
+  }
+}

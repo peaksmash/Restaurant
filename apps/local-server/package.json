@@ -1,0 +1,20 @@
+{
+  "name": "local-server",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/server.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "latest",
+    "@kiosk/last-app": "0.1.0",
+    "@kiosk/types": "0.1.0",
+    "@resvg/resvg-js": "^2.6.2",
+    "better-sqlite3": "^12.10.0",
+    "dotenv": "^17.4.2",
+    "fastify": "latest",
+    "stripe": "^22.1.1",
+    "tsx": "latest",
+    "typescript": "latest"
+  }
+}
