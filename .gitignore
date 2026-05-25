@@ -28,3 +28,6 @@ Thumbs.db
 
 # Claude
 .claude/
+
+.envxxx
+docs/artemispay-tester/
