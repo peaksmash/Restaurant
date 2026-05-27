@@ -5,6 +5,7 @@ import { UpsellPopup } from '@/components/suggestions/UpsellPopup'
 import AppShell from '@/components/layout/AppShell'
 import BottomNav from '@/components/layout/BottomNav'
 import Toast from '@/components/ui/Toast'
+import PhoneSetupModal from '@/components/ui/PhoneSetupModal'
 import { useSuggestionEngine } from '@/hooks/useSuggestionEngine'
 import LandingPage from '@/pages/LandingPage'
 import CartPage from '@/pages/CartPage'
@@ -109,6 +110,7 @@ export default function App() {
           onDismiss={(_, outcome) => suggestionEngine.dismissUpsell(outcome)}
         />
       )}
+      <PhoneSetupModal />
       <Toast />
     </AppShell>
   )

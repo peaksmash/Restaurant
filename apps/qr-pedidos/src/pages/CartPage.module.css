@@ -531,3 +531,40 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+.deliveryFieldsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.deliveryField {
+  display: flex;
+  flex-direction: column;
+}
+
+.fieldInput {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  min-height: 48px;
+  padding: 0 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+  width: 100%;
+}
+
+.fieldInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+  outline: none;
+}
+
+.fieldInput::placeholder {
+  color: var(--text-3);
+  font-weight: 500;
+}

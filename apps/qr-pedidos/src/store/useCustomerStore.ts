@@ -11,7 +11,7 @@ interface LastCustomer {
 interface CustomerStore {
   customer: LastCustomer | null
   loading: boolean
-  sync: (p: { name: string; phoneNumber: string; email?: string }) => Promise<void>
+  sync: (p: { name: string; phoneNumber?: string; email?: string; externalId?: string }) => Promise<void>
   syncAfterOrder: (totalCents: number) => Promise<void>
   refreshPoints: () => Promise<void>
   clear: () => void
@@ -23,10 +23,10 @@ export const useCustomerStore = create<CustomerStore>()(
       customer: null,
       loading: false,
 
-      sync: async ({ name, phoneNumber, email }) => {
+      sync: async ({ name, phoneNumber, email, externalId }) => {
         set({ loading: true })
         try {
-          const customer = await createOrGetCustomer({ name, phoneNumber, email })
+          const customer = await createOrGetCustomer({ name, phoneNumber, email, externalId })
           set({
             customer: {
               id: customer.id,

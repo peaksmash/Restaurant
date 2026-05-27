@@ -59,3 +59,15 @@
   color: var(--text-2);
   font-weight: 700;
 }
+
+.placeAutocompleteWrap {
+  min-height: 56px;
+  border-radius: var(--radius-lg);
+  position: relative;
+  z-index: 100;
+}
+
+.placeAutocompleteWrap gmp-place-autocomplete {
+  width: 100%;
+  color-scheme: light;
+}

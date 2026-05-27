@@ -1,15 +1,18 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import AddressPicker from '@/components/checkout/AddressPicker'
+import DeliveryAddressSection from '@/components/checkout/DeliveryAddressSection'
 import { CrosssellChip } from '@/components/suggestions/CrosssellChip'
-import { createOrder, createStripeCheckout, getLocation } from '@/lib/api'
+import { createOrder, createOrderSessionDraft, createStripeCheckout, getLocation } from '@/lib/api'
+import type { LastDeliveryInput, LastDeliveryAreaSnapshot } from '@/lib/api'
 import { findMatchingDeliveryArea, getDeliveryAreaFee, getEnabledDeliveryAreas } from '@/lib/delivery'
 import { isFirebaseAuthConfigured } from '@/lib/firebase'
 import { formatEuro } from '@/lib/utils'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useCartStore } from '@/store/useCartStore'
 import { useCustomerStore } from '@/store/useCustomerStore'
+import { useRestaurantStore } from '@/store/useRestaurantStore'
 import { useToastStore } from '@/store/useToastStore'
+import { useSavedAddress } from '@/hooks/useSavedAddress'
 import type { LocationInfo, OrderMode, PaymentMethod, StoredOrder } from '@/types'
 import type { CrosssellSuggestion } from '@/suggestions'
 import styles from './CartPage.module.css'
@@ -28,6 +31,7 @@ interface OrderCustomerPayload {
   name: string
   phoneNumber: string | null
   email: string | null
+  externalId: string | null
   surname: null
 }
 
@@ -53,14 +57,28 @@ export default function CartPage({ suggestionEngine }: Props) {
   const syncCustomer = useCustomerStore((state) => state.sync)
   const syncAfterOrder = useCustomerStore((state) => state.syncAfterOrder)
   const showToast = useToastStore((state) => state.show)
+  const { locationInfo, orderMode: bootstrapOrderMode } = useRestaurantStore()
   const [sending, setSending] = useState(false)
+  const [draftSessionId, setDraftSessionId] = useState<string | null>(null)
+  const [needCutlery, setNeedCutlery] = useState(false)
   const [location, setLocation] = useState<LocationInfo | null>(null)
-  const [locationLoading, setLocationLoading] = useState(true)
+  const [locationLoading, setLocationLoading] = useState(!locationInfo)
   const [selectedPaymentMode, setSelectedPaymentMode] = useState<CheckoutPaymentMode>('online')
   const [loginBusy, setLoginBusy] = useState(false)
   const [showLoyaltyPrompt, setShowLoyaltyPrompt] = useState(false)
+  const { savedAddress, saveAddress, clearAddress } = useSavedAddress()
+
+  // Sincronizar dirección guardada con el cartStore al montar
+  useEffect(() => {
+    if (savedAddress && mode === 'domicilio') {
+      setAddress(savedAddress.address, savedAddress.lat || undefined, savedAddress.lng || undefined)
+    }
+  }, [savedAddress?.address])
 
   useEffect(() => {
+    // Skip API call if bootstrap already provides locationInfo
+    if (locationInfo) return
+
     let cancelled = false
 
     getLocation()
@@ -84,26 +102,27 @@ export default function CartPage({ suggestionEngine }: Props) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [locationInfo])
+
+  // locationInfo from bootstrap takes priority over local-server API result
+  const effectiveLocation: LocationInfo | null = locationInfo ?? location
 
   const sub = subtotal()
   const isEmpty = items.length === 0
   const enabledDeliveryAreas = useMemo(
-    () => getEnabledDeliveryAreas(location?.deliveryAreas),
-    [location?.deliveryAreas],
+    () => getEnabledDeliveryAreas(effectiveLocation?.deliveryAreas),
+    [effectiveLocation?.deliveryAreas],
   )
   const matchedDeliveryArea = useMemo(() => {
-    if (mode !== 'domicilio') {
-      return null
-    }
-
-    const match = findMatchingDeliveryArea(enabledDeliveryAreas, addressLat, addressLng)
-    if (match) {
-      return match
-    }
-
-    return enabledDeliveryAreas.length === 1 ? enabledDeliveryAreas[0] : null
+    if (mode !== 'domicilio') return null
+    // Only real polygon/circle match — no provisional fallback once coords are present
+    return findMatchingDeliveryArea(enabledDeliveryAreas, addressLat, addressLng)
   }, [addressLat, addressLng, enabledDeliveryAreas, mode])
+  const noDeliveryAvailable = mode === 'domicilio' && enabledDeliveryAreas.length === 0
+  const missingCoords = mode === 'domicilio' && address.trim().length > 0 &&
+    (addressLat == null || addressLng == null || (addressLat === 0 && addressLng === 0))
+  const hasCoords = addressLat != null && addressLng != null && !(addressLat === 0 && addressLng === 0)
+  const outOfZone = mode === 'domicilio' && hasCoords && enabledDeliveryAreas.length > 0 && !matchedDeliveryArea
   const deliveryFee = mode === 'domicilio' ? getDeliveryAreaFee(matchedDeliveryArea) : 0
   const total = sub + deliveryFee
   const minimumBasket = matchedDeliveryArea?.minimumBasket ?? 0
@@ -119,8 +138,8 @@ export default function CartPage({ suggestionEngine }: Props) {
         icon: <CardIcon />,
       }]
     }
-    return buildPaymentOptions(location?.paymentMethods, mode)
-  }, [isMesaMode, location?.paymentMethods, mode])
+    return buildPaymentOptions(effectiveLocation?.paymentMethods, mode)
+  }, [isMesaMode, effectiveLocation?.paymentMethods, mode])
 
   useEffect(() => {
     if (!isMesaMode) {
@@ -157,7 +176,7 @@ export default function CartPage({ suggestionEngine }: Props) {
     }
 
     if (enabledDeliveryAreas.length === 0) {
-      return 'Ahora mismo el restaurante no tiene reparto configurado.'
+      return 'Domicilio no disponible ahora.'
     }
 
     if (!address.trim()) {
@@ -174,7 +193,7 @@ export default function CartPage({ suggestionEngine }: Props) {
       return 'Esa direccion queda fuera de nuestras zonas de reparto activas.'
     }
 
-    const estimate = matchedDeliveryArea.estimatedDeliveryMinutes || location?.preparationMinutes || 20
+    const estimate = matchedDeliveryArea.estimatedDeliveryMinutes || effectiveLocation?.preparationMinutes || 20
     const areaName = matchedDeliveryArea.name ? ` · ${matchedDeliveryArea.name}` : ''
     return `Entrega estimada ${estimate} min${areaName}`
   }, [
@@ -187,6 +206,92 @@ export default function CartPage({ suggestionEngine }: Props) {
     matchedDeliveryArea,
     mode,
   ])
+
+  const QR_SERVER_TENANT = import.meta.env.VITE_QR_SERVER_TENANT as string | undefined
+  const QR_SERVER_LOCATION_KEY = import.meta.env.VITE_QR_SERVER_LOCATION_KEY as string | undefined
+
+  const handleDraft = async () => {
+    if (isEmpty || !QR_SERVER_TENANT || !QR_SERVER_LOCATION_KEY) return
+
+    setSending(true)
+    try {
+      const draftItems = items.map((item) => {
+        const modifiersTotal = item.modifiers.reduce((sum, m) => sum + m.priceImpact, 0)
+        const unitPrice = item.price + modifiersTotal
+        return {
+          productId: item.productId,
+          productName: item.name,
+          quantity: item.qty,
+          unitPrice,
+          totalPrice: unitPrice * item.qty,
+          notes: item.notes ?? null,
+          modifiers: item.modifiers.map((m) => ({
+            modifierId: m.id,
+            modifierName: m.name,
+            quantity: 1,
+            unitPrice: m.priceImpact,
+            totalPrice: m.priceImpact,
+          })),
+        }
+      })
+
+      let lastDeliveryInput: LastDeliveryInput | null = null
+      let lastDeliveryAreaSnapshot: LastDeliveryAreaSnapshot | null = null
+
+      if (mode === 'domicilio') {
+        if (!address.trim()) {
+          showToast('⚠️ Introduce tu dirección de entrega')
+          setSending(false)
+          return
+        }
+        const hasCoords = addressLat != null && addressLng != null && !(addressLat === 0 && addressLng === 0)
+        if (!hasCoords) {
+          showToast('⚠️ Usa el botón "Usar mi ubicación" para obtener tus coordenadas')
+          setSending(false)
+          return
+        }
+        const fee = matchedDeliveryArea?.fee ?? matchedDeliveryArea?.deliveryFee ?? 0
+        lastDeliveryInput = {
+          address: address.trim(),
+          details: null,
+          latitude: addressLat ?? 0,
+          longitude: addressLng ?? 0,
+          fee,
+          needCutlery,
+          external: false,
+        }
+        if (matchedDeliveryArea) {
+          lastDeliveryAreaSnapshot = {
+            id: matchedDeliveryArea.id ?? null,
+            name: matchedDeliveryArea.name ?? null,
+            deliveryFee: fee,
+            minimumBasket: matchedDeliveryArea.minimumBasket ?? 0,
+            estimatedDeliveryMinutes: matchedDeliveryArea.estimatedDeliveryMinutes ?? 0,
+          }
+        }
+      }
+
+      const result = await createOrderSessionDraft({
+        tenant: QR_SERVER_TENANT,
+        locationKey: QR_SERVER_LOCATION_KEY,
+        orderMode: bootstrapOrderMode,
+        paymentMode: selectedPaymentMode,
+        items: draftItems,
+        totals: { subtotal: sub, deliveryFee, total, currency: 'EUR' },
+        lastDeliveryInput,
+        lastDeliveryAreaSnapshot,
+      })
+
+      setDraftSessionId(result.orderSessionId)
+      console.log('[OrderSession draft]', result.orderSessionId, result)
+      showToast(`Sesión creada: ${result.orderSessionId.slice(0, 8)}…`)
+    } catch (err) {
+      console.error('[OrderSession draft error]', err)
+      showToast('⚠️ No se pudo crear la sesión de pedido')
+    } finally {
+      setSending(false)
+    }
+  }
 
   const handleConfirm = async () => {
     if (isEmpty) {
@@ -234,10 +339,19 @@ export default function CartPage({ suggestionEngine }: Props) {
         }
       })
 
+      const deliveryDetails = mode === 'domicilio' && savedAddress
+        ? [
+            savedAddress.floor ? `Piso: ${savedAddress.floor}` : '',
+            savedAddress.door ? `Puerta: ${savedAddress.door}` : '',
+          ].filter(Boolean).join(', ')
+        : ''
+
       const orderNotes = [
         notes.trim(),
         mode === 'domicilio' ? `Entrega: ${address}` : '',
+        deliveryDetails,
         mode === 'domicilio' && matchedDeliveryArea?.name ? `Zona: ${matchedDeliveryArea.name}` : '',
+        mode === 'domicilio' && savedAddress?.riderNotes ? `Repartidor: ${savedAddress.riderNotes}` : '',
       ]
         .filter(Boolean)
         .join('\n')
@@ -289,8 +403,6 @@ export default function CartPage({ suggestionEngine }: Props) {
       }
 
       if (selectedPaymentMode === 'online') {
-        const history = JSON.parse(localStorage.getItem('qrp_orders') || '[]') as StoredOrder[]
-        localStorage.setItem('qrp_orders', JSON.stringify([order, ...history].slice(0, 20)))
         clearCart()
         sessionStorage.setItem('stripe_pending_order', result.orderSessionId)
         const successUrl = `${window.location.origin}/pedidos/${result.orderSessionId}?stripe_success=1`
@@ -301,8 +413,6 @@ export default function CartPage({ suggestionEngine }: Props) {
       }
 
       // cashier: no syncAfterOrder — puntos solo tras pago confirmado
-      const history = JSON.parse(localStorage.getItem('qrp_orders') || '[]') as StoredOrder[]
-      localStorage.setItem('qrp_orders', JSON.stringify([order, ...history].slice(0, 20)))
       clearCart()
       navigate(`/pedidos/${result.orderSessionId}`, { state: { order } })
     } catch (error) {
@@ -351,10 +461,19 @@ export default function CartPage({ suggestionEngine }: Props) {
       <div className={styles.scroll}>
         {mode === 'domicilio' && (
           <div className={styles.addrSection}>
-            <div className={styles.fieldLabel}>Direccion de entrega</div>
-            <AddressPicker
-              value={address}
-              onChange={({ address: nextAddress, lat, lng }) => setAddress(nextAddress, lat, lng)}
+            <DeliveryAddressSection
+              savedAddress={savedAddress}
+              onSave={(addr) => {
+                saveAddress(addr)
+                setAddress(addr.address, addr.lat || undefined, addr.lng || undefined)
+              }}
+              onClear={() => {
+                clearAddress()
+                setAddress('', undefined, undefined)
+              }}
+              restaurantLat={effectiveLocation?.lat}
+              restaurantLng={effectiveLocation?.lng}
+              deliveryAreas={enabledDeliveryAreas}
             />
             {deliveryStatusMessage && (
               <div className={`${styles.deliveryHint} ${matchedDeliveryArea ? styles.deliveryHintOk : styles.deliveryHintWarn}`}>
@@ -371,6 +490,15 @@ export default function CartPage({ suggestionEngine }: Props) {
                 )}
               </div>
             )}
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', fontSize: 14, color: '#555', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={needCutlery}
+                onChange={(e) => setNeedCutlery(e.target.checked)}
+                style={{ width: 16, height: 16 }}
+              />
+              Incluir cubiertos
+            </label>
           </div>
         )}
 
@@ -503,8 +631,34 @@ export default function CartPage({ suggestionEngine }: Props) {
               </div>
             </div>
 
+            {noDeliveryAvailable && (
+              <div className={styles.deliveryHint} style={{ margin: '0 0 8px' }}>
+                Domicilio no disponible ahora
+              </div>
+            )}
+            {belowMinimum && !noDeliveryAvailable && (
+              <div className={styles.deliveryHint} style={{ margin: '0 0 8px' }}>
+                Pedido mínimo {formatEuro(minimumBasket)} para esta zona
+              </div>
+            )}
+            {missingCoords && !noDeliveryAvailable && (
+              <div className={styles.deliveryHint} style={{ margin: '0 0 8px' }}>
+                Pulsa "Usar mi ubicación" para confirmar tus coordenadas
+              </div>
+            )}
+            {outOfZone && (
+              <div className={styles.deliveryHint} style={{ margin: '0 0 8px', background: 'rgba(180,0,0,0.07)', color: '#b00020' }}>
+                Dirección fuera de zona de reparto
+              </div>
+            )}
+            {draftSessionId && (
+              <div className={styles.deliveryHint} style={{ margin: '0 0 8px', background: 'rgba(0,128,0,0.08)', color: '#1a6b1a' }}>
+                Sesión {draftSessionId.slice(0, 8)}… creada
+              </div>
+            )}
+
             <div className={styles.ctaWrap}>
-              <button className={styles.ctaBtn} onClick={handleConfirm} disabled={sending || belowMinimum}>
+              <button className={styles.ctaBtn} onClick={handleDraft} disabled={sending || belowMinimum || noDeliveryAvailable || missingCoords || outOfZone}>
                 {sending ? (
                   <>
                     <div className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
@@ -557,11 +711,13 @@ export default function CartPage({ suggestionEngine }: Props) {
 function buildOrderCustomer(user: ReturnType<typeof useAuthStore.getState>['user']): OrderCustomerPayload {
   const guestName = localStorage.getItem('qrp_guest_name')
   const guestPhone = localStorage.getItem('qrp_guest_phone')
+  const extraPhone = useAuthStore.getState().extraPhone
 
   return {
     name: user?.name || guestName || 'Cliente QR',
-    phoneNumber: user?.phone || guestPhone || null,
+    phoneNumber: user?.phone || extraPhone || guestPhone || null,
     email: user?.email || null,
+    externalId: (user && !user.isAnonymous) ? user.uid : null,
     surname: null,
   }
 }

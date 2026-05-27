@@ -2,7 +2,6 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import {
   GoogleAuthProvider,
-  PhoneAuthProvider,
   RecaptchaVerifier,
   onAuthStateChanged,
   signInAnonymously,
@@ -21,6 +20,8 @@ interface AuthStore {
   loading: boolean
   error: string | null
   _confirmation: ConfirmationResult | null
+  /** Teléfono introducido manualmente por usuarios Google (sin phone real) */
+  extraPhone: string | null
 
   init: () => () => void
   loginGoogle: () => Promise<void>
@@ -29,6 +30,8 @@ interface AuthStore {
   loginGuest: (name: string, phone: string) => Promise<void>
   logout: () => Promise<void>
   clearError: () => void
+  /** Guarda el teléfono del usuario y re-sincroniza el cliente */
+  setExtraPhone: (phone: string) => Promise<void>
 }
 
 function mapUser(user: User): AuthUser {
@@ -50,6 +53,10 @@ function ensureFirebaseAuth() {
   return auth
 }
 
+function buildSyncPhone(firebasePhone: string | null | undefined, extraPhone: string | null): string | undefined {
+  return firebasePhone ?? extraPhone ?? undefined
+}
+
 export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
@@ -57,6 +64,7 @@ export const useAuthStore = create<AuthStore>()(
       loading: true,
       error: null,
       _confirmation: null,
+      extraPhone: null,
 
       init: () => {
         if (!auth || !isFirebaseAuthConfigured) {
@@ -66,6 +74,17 @@ export const useAuthStore = create<AuthStore>()(
 
         const unsubscribe = onAuthStateChanged(auth, (user) => {
           set({ user: user ? mapUser(user) : null, loading: false })
+
+          // Sincronizar cliente si hay sesión y aún no está vinculado
+          if (user && !useCustomerStore.getState().customer) {
+            const phone = buildSyncPhone(user.phoneNumber, get().extraPhone)
+            useCustomerStore.getState().sync({
+              name: user.displayName ?? user.email ?? 'Cliente',
+              ...(phone ? { phoneNumber: phone } : {}),
+              email: user.email ?? undefined,
+              externalId: user.uid,
+            }).catch(() => {})
+          }
         })
 
         return unsubscribe
@@ -76,7 +95,17 @@ export const useAuthStore = create<AuthStore>()(
         try {
           const authInstance = ensureFirebaseAuth()
           const provider = new GoogleAuthProvider()
-          await signInWithPopup(authInstance, provider)
+          const result = await signInWithPopup(authInstance, provider)
+          const { uid, displayName, email, phoneNumber } = result.user
+          if (displayName || email) {
+            const phone = buildSyncPhone(phoneNumber, get().extraPhone)
+            await useCustomerStore.getState().sync({
+              name: displayName ?? email ?? 'Cliente',
+              ...(phone ? { phoneNumber: phone } : {}),
+              email: email ?? undefined,
+              externalId: uid,
+            }).catch(() => {/* puntos no críticos */})
+          }
           await requestPushNotificationsToken(3)
         } catch (error) {
           set({ error: error instanceof Error ? error.message : 'Error al iniciar sesion con Google' })
@@ -144,14 +173,31 @@ export const useAuthStore = create<AuthStore>()(
         useCustomerStore.getState().clear()
         localStorage.removeItem('qrp_guest_name')
         localStorage.removeItem('qrp_guest_phone')
-        set({ user: null, _confirmation: null })
+        set({ user: null, _confirmation: null, extraPhone: null })
       },
 
       clearError: () => set({ error: null }),
+
+      setExtraPhone: async (phone) => {
+        const { user } = get()
+        if (!user || user.isAnonymous) {
+          set({ extraPhone: phone })
+          return
+        }
+        // Sync primero — solo guardamos el teléfono si Last App lo acepta
+        await useCustomerStore.getState().sync({
+          name: user.name,
+          phoneNumber: phone,
+          email: user.email ?? undefined,
+          externalId: user.uid,
+        })
+        // Llegamos aquí solo si sync no lanzó excepción
+        set({ extraPhone: phone })
+      },
     }),
     {
       name: 'qrp-auth',
-      partialize: (state) => ({ user: state.user }),
+      partialize: (state) => ({ user: state.user, extraPhone: state.extraPhone }),
     },
   ),
 )

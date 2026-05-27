@@ -368,3 +368,19 @@ img { display: block; }
   margin-bottom: 8px;
 }
 .composition-btn-dismiss { width: 100%; min-height: 40px; color: var(--text-3); font-size: 14px; }
+
+/* Ocultar overlay de error de Google Maps — no usamos mapa, solo autocomplete */
+.gm-err-container,
+.gm-style-cc,
+div[style*="z-index: 1000000"] iframe[src*="google.com/maps/api/js"] {
+  display: none !important;
+}
+
+/* Forzar tema claro en el autocomplete de Places y elevar el dropdown */
+gmp-place-autocomplete {
+  color-scheme: light !important;
+}
+
+.pac-container {
+  z-index: 9999 !important;
+}

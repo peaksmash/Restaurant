@@ -2,17 +2,31 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCartStore } from '@/store/useCartStore'
 import { useRestaurantStore } from '@/store/useRestaurantStore'
+import type { BootstrapOrderMode } from '@/store/useRestaurantStore'
+import type { OrderMode } from '@/types'
 import styles from './LandingPage.module.css'
+
+const CART_TO_BOOTSTRAP: Record<OrderMode, BootstrapOrderMode> = {
+  domicilio: 'delivery',
+  recoger: 'pickup',
+  mesa: 'table',
+}
 
 export default function LandingPage() {
   const navigate = useNavigate()
   const { setMode } = useCartStore()
-  const { config, load } = useRestaurantStore()
+  const { config, load, setOrderMode } = useRestaurantStore()
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
     void load()
   }, [load])
+
+  function selectMode(cartMode: OrderMode) {
+    setMode(cartMode)
+    setOrderMode(CART_TO_BOOTSTRAP[cartMode])
+    navigate('/menu')
+  }
 
   const restaurantName = formatRestaurantName(config?.restaurantName)
 
@@ -49,10 +63,7 @@ export default function LandingPage() {
           <button
             className={styles.modeCard}
             type="button"
-            onClick={() => {
-              setMode('domicilio')
-              navigate('/menu')
-            }}
+            onClick={() => selectMode('domicilio')}
           >
             <span className={styles.modeIcon}><DeliveryIcon /></span>
             <span className={styles.modeContent}>
@@ -65,15 +76,25 @@ export default function LandingPage() {
           <button
             className={styles.modeCard}
             type="button"
-            onClick={() => {
-              setMode('recoger')
-              navigate('/menu')
-            }}
+            onClick={() => selectMode('recoger')}
           >
             <span className={styles.modeIcon}><BagIcon /></span>
             <span className={styles.modeContent}>
               <span className={styles.modeTitle}>Recoger</span>
               <span className={styles.modeText}>Haz tu pedido y recógelo en el local.</span>
+            </span>
+            <span className={styles.modeArrow}><ArrowRightIcon /></span>
+          </button>
+
+          <button
+            className={styles.modeCard}
+            type="button"
+            onClick={() => selectMode('mesa')}
+          >
+            <span className={styles.modeIcon}><TableIcon /></span>
+            <span className={styles.modeContent}>
+              <span className={styles.modeTitle}>Mesa</span>
+              <span className={styles.modeText}>Pide desde tu mesa con el QR.</span>
             </span>
             <span className={styles.modeArrow}><ArrowRightIcon /></span>
           </button>
@@ -110,6 +131,17 @@ function BagIcon() {
     <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
       <path d="M6 7V6a6 6 0 0 1 12 0v1" />
       <path d="M5 7h14l-1 13H6L5 7Z" />
+    </svg>
+  )
+}
+
+function TableIcon() {
+  return (
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h18" />
+      <path d="M3 6v2a9 9 0 0 0 18 0V6" />
+      <path d="M12 14v6" />
+      <path d="M8 20h8" />
     </svg>
   )
 }

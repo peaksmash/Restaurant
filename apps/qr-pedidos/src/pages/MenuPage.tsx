@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import ProductModal from '@/components/menu/ProductModal'
+import { getEnabledDeliveryAreas } from '@/lib/delivery'
 import { getPromotionBadgeMeta } from '@/lib/promotionBadge'
 import { formatEuro } from '@/lib/utils'
 import { useCartStore } from '@/store/useCartStore'
@@ -25,7 +26,7 @@ interface Props {
 export default function MenuPage({ suggestionEngine }: Props) {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const { catalog, config, load, loading } = useRestaurantStore()
+  const { catalog, config, locationInfo, load, loading } = useRestaurantStore()
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [modalProduct, setModalProduct] = useState<LastProduct | null>(null)
   const categoryRefs = useRef<Record<string, HTMLElement | null>>({})
@@ -191,6 +192,13 @@ export default function MenuPage({ suggestionEngine }: Props) {
         )}
       </header>
 
+      {mode === 'domicilio' && (
+        <DeliveryInfoBar
+          areas={locationInfo?.deliveryAreas}
+          cartSubtotal={cartTotal}
+        />
+      )}
+
       <div className={styles.categoriesBar}>
         <div className={styles.categoriesScroller}>
           {categories.map((category) => (
@@ -328,5 +336,73 @@ function BagIcon() {
       <path d="M6 7V6a6 6 0 0 1 12 0v1" />
       <path d="M5 7h14l-1 13H6L5 7Z" />
     </svg>
+  )
+}
+
+interface DeliveryInfoBarProps {
+  areas: import('@/types').DeliveryArea[] | undefined
+  cartSubtotal: number
+}
+
+function DeliveryInfoBar({ areas, cartSubtotal }: DeliveryInfoBarProps) {
+  const enabled = getEnabledDeliveryAreas(areas)
+  const area = enabled[0] ?? null
+
+  const barStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '7px 16px',
+    fontSize: 12,
+    background: area ? 'rgba(255,249,244,0.95)' : 'rgba(255,235,235,0.9)',
+    borderBottom: '1px solid rgba(116,44,22,0.08)',
+    flexWrap: 'wrap',
+    flexShrink: 0,
+    color: area ? '#7a3a1a' : '#b00020',
+    fontWeight: 500,
+  }
+
+  const pillStyle: React.CSSProperties = {
+    background: 'rgba(116,44,22,0.08)',
+    borderRadius: 20,
+    padding: '2px 9px',
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#7a3a1a',
+  }
+
+  const warnStyle: React.CSSProperties = {
+    ...pillStyle,
+    background: 'rgba(180,0,0,0.10)',
+    color: '#b00020',
+  }
+
+  if (!area) {
+    return (
+      <div style={barStyle}>
+        <span>Domicilio no disponible ahora</span>
+      </div>
+    )
+  }
+
+  const belowMin = area.minimumBasket > 0 && cartSubtotal < area.minimumBasket
+  const fee = area.fee ?? area.deliveryFee ?? 0
+
+  return (
+    <div style={barStyle}>
+      <span style={{ marginRight: 2 }}>{area.name?.trim() || 'Zona reparto'}</span>
+      <span style={pillStyle}>Envío {formatEuro(fee)}</span>
+      {area.minimumBasket > 0 && (
+        <span style={pillStyle}>Mín. {formatEuro(area.minimumBasket)}</span>
+      )}
+      {area.estimatedDeliveryMinutes > 0 && (
+        <span style={pillStyle}>{area.estimatedDeliveryMinutes} min</span>
+      )}
+      {belowMin && (
+        <span style={warnStyle}>
+          Pedido mínimo {formatEuro(area.minimumBasket)}
+        </span>
+      )}
+    </div>
   )
 }

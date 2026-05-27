@@ -1,0 +1,302 @@
+/* ── Tarjeta guardada ─────────────────────────────── */
+.savedCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #fff;
+  border: 1.5px solid var(--accent-border);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.savedIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.savedInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.savedLabel {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--accent-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 2px;
+}
+
+.savedAddress {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.savedDetail {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+.savedActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.changeBtn {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent-dark);
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+}
+
+.clearBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--red-soft);
+  color: var(--red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Formulario ───────────────────────────────────── */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.input {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  min-height: 50px;
+  padding: 0 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+  width: 100%;
+}
+
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.textarea {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+  width: 100%;
+  resize: none;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+  outline: none;
+}
+
+.textarea::placeholder {
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.autocompleteWrap {
+  min-height: 50px;
+  border-radius: var(--radius-lg);
+  overflow: visible;
+  position: relative;
+  z-index: 100;
+  color-scheme: light;
+}
+
+.autocompleteWrap gmp-place-autocomplete {
+  width: 100%;
+  color-scheme: light;
+}
+
+/* ── Mapa ─────────────────────────────────────────── */
+.mapSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mapToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--bg-3);
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-2);
+  text-align: left;
+}
+
+.mapToggle svg:first-child {
+  color: var(--accent-dark);
+  flex-shrink: 0;
+}
+
+.mapToggle span,
+.mapToggle > *:nth-child(2) {
+  flex: 1;
+}
+
+.mapWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mapGeoRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mapHint {
+  font-size: 12px;
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.geoBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #32170f;
+  font-size: 12px;
+  font-weight: 900;
+  min-height: 32px;
+  flex-shrink: 0;
+}
+
+.geoBtn:disabled { opacity: 0.6; }
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #32170f;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.map {
+  height: 240px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.geoError {
+  font-size: 12px;
+  color: var(--red);
+  font-weight: 600;
+}
+
+.confirmMapBtn {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 14px;
+  background: var(--text);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+/* ── Acciones ─────────────────────────────────────── */
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.saveBtn {
+  flex: 1;
+  min-height: 50px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #32170f;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.saveBtn:disabled {
+  opacity: 0.45;
+}
+
+.cancelBtn {
+  min-height: 50px;
+  padding: 0 20px;
+  border-radius: 16px;
+  background: var(--bg-3);
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 800;
+}

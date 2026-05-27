@@ -1,21 +1,28 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useCustomerStore } from '@/store/useCustomerStore'
+import { useSavedAddress } from '@/hooks/useSavedAddress'
 import styles from './ProfilePage.module.css'
 
 export default function ProfilePage() {
-  const { user, logout } = useAuthStore()
+  const { user, logout, extraPhone, setExtraPhone } = useAuthStore()
   const customer = useCustomerStore((state) => state.customer)
   const points = useCustomerStore((state) => state.customer?.points ?? null)
   const refreshPoints = useCustomerStore((state) => state.refreshPoints)
+  const { savedAddress, clearAddress } = useSavedAddress()
   const navigate = useNavigate()
 
-  useEffect(() => {
-    if (!customer) {
-      return
-    }
+  // Phone editing state
+  const realPhone = user?.phone  // from Firebase (phone auth)
+  const currentPhone = realPhone ?? extraPhone
+  const [editingPhone, setEditingPhone] = useState(false)
+  const [phoneInput, setPhoneInput] = useState('')
+  const [phoneSaving, setPhoneSaving] = useState(false)
+  const [phoneError, setPhoneError] = useState<string | null>(null)
 
+  useEffect(() => {
+    if (!customer) return
     void refreshPoints()
   }, [customer?.id, refreshPoints])
 
@@ -26,7 +33,36 @@ export default function ProfilePage() {
   const guestName = localStorage.getItem('qrp_guest_name')
   const guestPhone = localStorage.getItem('qrp_guest_phone')
   const displayName = user?.name || guestName || 'Invitado'
-  const displayContact = user?.email || user?.phone || guestPhone || 'Sin sesión iniciada'
+  const displayContact = user?.email || currentPhone || guestPhone || 'Sin sesión iniciada'
+
+  const handleSavePhone = async () => {
+    const raw = phoneInput.trim()
+    if (!raw) {
+      setPhoneError('Introduce tu número de teléfono')
+      return
+    }
+    // Auto-prefijo +34 si son 9 dígitos sin prefijo
+    const digits = raw.replace(/\D/g, '')
+    const normalized = digits.length === 9 ? `+34${digits}` : (raw.startsWith('+') ? raw : `+${raw}`)
+    if (!/^\+[0-9]{9,15}$/.test(normalized)) {
+      setPhoneError('Número no válido — ej. 622 583 560 o +34 622 583 560')
+      return
+    }
+    setPhoneError(null)
+    setPhoneSaving(true)
+    try {
+      await setExtraPhone(normalized)
+      setEditingPhone(false)
+      setPhoneInput('')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : ''
+      setPhoneError(
+        msg.includes('400') ? 'Ese número no fue aceptado — prueba con +34 622 583 560' : 'No se pudo guardar el teléfono'
+      )
+    } finally {
+      setPhoneSaving(false)
+    }
+  }
 
   return (
     <div className={styles.page}>
@@ -60,12 +96,84 @@ export default function ProfilePage() {
           <span className={styles.rowLabel}>Puntos de fidelidad</span>
           <span className={styles.rowValue}>{points == null ? 'Sin vincular' : `${points} pts`}</span>
         </div>
+
+        {/* Teléfono — obligatorio para vincular puntos */}
+        {user && !user.isAnonymous && (
+          <div className={styles.phoneBlock}>
+            <div className={styles.row} style={{ borderBottom: editingPhone ? 'none' : undefined }}>
+              <div className={styles.rowIcon}><PhoneIcon /></div>
+              <div style={{ flex: 1 }}>
+                <span className={styles.rowLabel}>Teléfono</span>
+                {currentPhone && !editingPhone && (
+                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{currentPhone}</div>
+                )}
+              </div>
+              {realPhone ? (
+                <span className={styles.rowValue}>{realPhone}</span>
+              ) : editingPhone ? (
+                <button
+                  style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 700 }}
+                  onClick={() => { setEditingPhone(false); setPhoneError(null) }}
+                >
+                  Cancelar
+                </button>
+              ) : (
+                <button
+                  style={{ fontSize: 12, color: 'var(--accent-dark)', fontWeight: 800 }}
+                  onClick={() => { setEditingPhone(true); setPhoneInput(extraPhone ?? '') }}
+                >
+                  {currentPhone ? 'Cambiar' : 'Añadir'}
+                </button>
+              )}
+            </div>
+            {editingPhone && (
+              <div className={styles.phoneEdit}>
+                <input
+                  className={styles.phoneInput}
+                  type="tel"
+                  placeholder="+34 612 345 678"
+                  value={phoneInput}
+                  onChange={(e) => { setPhoneInput(e.target.value); setPhoneError(null) }}
+                  autoFocus
+                />
+                {phoneError && <p className={styles.phoneError}>{phoneError}</p>}
+                <button
+                  className={styles.phoneSaveBtn}
+                  onClick={handleSavePhone}
+                  disabled={phoneSaving}
+                >
+                  {phoneSaving ? 'Guardando...' : 'Guardar teléfono'}
+                </button>
+              </div>
+            )}
+            {!currentPhone && !editingPhone && (
+              <p className={styles.phoneHint}>
+                Añade tu teléfono para vincular tus puntos de fidelidad
+              </p>
+            )}
+          </div>
+        )}
+
         <div className={styles.row}>
           <div className={styles.rowIcon}><LocationIcon /></div>
-          <span className={styles.rowLabel}>Dirección guardada</span>
-          <span className={styles.rowValue}>
-            {localStorage.getItem('qrp-cart') ? 'Disponible en tu próxima compra' : 'Aún no guardada'}
-          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span className={styles.rowLabel}>Dirección guardada</span>
+            {savedAddress && (
+              <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {savedAddress.address}
+              </div>
+            )}
+          </div>
+          {savedAddress ? (
+            <button
+              style={{ fontSize: 12, color: 'var(--red)', fontWeight: 800, flexShrink: 0 }}
+              onClick={clearAddress}
+            >
+              Eliminar
+            </button>
+          ) : (
+            <span className={styles.rowValue}>Aún no guardada</span>
+          )}
         </div>
       </div>
 
@@ -117,6 +225,14 @@ function StarIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
       <path d="m12 3 2.7 5.47 6.03.88-4.36 4.25 1.03 6-5.4-2.84-5.4 2.84 1.03-6L3.27 9.35l6.03-.88L12 3Z" />
+    </svg>
+  )
+}
+
+function PhoneIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6 6l.91-.9a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z" />
     </svg>
   )
 }

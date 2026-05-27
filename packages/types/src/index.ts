@@ -151,6 +151,7 @@ export interface CustomerInfo {
   surname?: Nullable<string>;
   phoneNumber?: Nullable<string>;
   email?: Nullable<string>;
+  lastCustomerId?: Nullable<string>;
 }
 
 export interface OrderPricingSummary {
