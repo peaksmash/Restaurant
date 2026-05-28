@@ -2,8 +2,7 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DeliveryAddressSection from '@/components/checkout/DeliveryAddressSection'
 import { CrosssellChip } from '@/components/suggestions/CrosssellChip'
-import { createOrder, createOrderSessionDraft, createStripeCheckout, getLocation } from '@/lib/api'
-import type { LastDeliveryInput, LastDeliveryAreaSnapshot } from '@/lib/api'
+import { createOrder, getLocation } from '@/lib/api'
 import { findMatchingDeliveryArea, getDeliveryAreaFee, getEnabledDeliveryAreas } from '@/lib/delivery'
 import { isFirebaseAuthConfigured } from '@/lib/firebase'
 import { formatEuro } from '@/lib/utils'
@@ -207,92 +206,6 @@ export default function CartPage({ suggestionEngine }: Props) {
     mode,
   ])
 
-  const QR_SERVER_TENANT = import.meta.env.VITE_QR_SERVER_TENANT as string | undefined
-  const QR_SERVER_LOCATION_KEY = import.meta.env.VITE_QR_SERVER_LOCATION_KEY as string | undefined
-
-  const handleDraft = async () => {
-    if (isEmpty || !QR_SERVER_TENANT || !QR_SERVER_LOCATION_KEY) return
-
-    setSending(true)
-    try {
-      const draftItems = items.map((item) => {
-        const modifiersTotal = item.modifiers.reduce((sum, m) => sum + m.priceImpact, 0)
-        const unitPrice = item.price + modifiersTotal
-        return {
-          productId: item.productId,
-          productName: item.name,
-          quantity: item.qty,
-          unitPrice,
-          totalPrice: unitPrice * item.qty,
-          notes: item.notes ?? null,
-          modifiers: item.modifiers.map((m) => ({
-            modifierId: m.id,
-            modifierName: m.name,
-            quantity: 1,
-            unitPrice: m.priceImpact,
-            totalPrice: m.priceImpact,
-          })),
-        }
-      })
-
-      let lastDeliveryInput: LastDeliveryInput | null = null
-      let lastDeliveryAreaSnapshot: LastDeliveryAreaSnapshot | null = null
-
-      if (mode === 'domicilio') {
-        if (!address.trim()) {
-          showToast('⚠️ Introduce tu dirección de entrega')
-          setSending(false)
-          return
-        }
-        const hasCoords = addressLat != null && addressLng != null && !(addressLat === 0 && addressLng === 0)
-        if (!hasCoords) {
-          showToast('⚠️ Usa el botón "Usar mi ubicación" para obtener tus coordenadas')
-          setSending(false)
-          return
-        }
-        const fee = matchedDeliveryArea?.fee ?? matchedDeliveryArea?.deliveryFee ?? 0
-        lastDeliveryInput = {
-          address: address.trim(),
-          details: null,
-          latitude: addressLat ?? 0,
-          longitude: addressLng ?? 0,
-          fee,
-          needCutlery,
-          external: false,
-        }
-        if (matchedDeliveryArea) {
-          lastDeliveryAreaSnapshot = {
-            id: matchedDeliveryArea.id ?? null,
-            name: matchedDeliveryArea.name ?? null,
-            deliveryFee: fee,
-            minimumBasket: matchedDeliveryArea.minimumBasket ?? 0,
-            estimatedDeliveryMinutes: matchedDeliveryArea.estimatedDeliveryMinutes ?? 0,
-          }
-        }
-      }
-
-      const result = await createOrderSessionDraft({
-        tenant: QR_SERVER_TENANT,
-        locationKey: QR_SERVER_LOCATION_KEY,
-        orderMode: bootstrapOrderMode,
-        paymentMode: selectedPaymentMode,
-        items: draftItems,
-        totals: { subtotal: sub, deliveryFee, total, currency: 'EUR' },
-        lastDeliveryInput,
-        lastDeliveryAreaSnapshot,
-      })
-
-      setDraftSessionId(result.orderSessionId)
-      console.log('[OrderSession draft]', result.orderSessionId, result)
-      showToast(`Sesión creada: ${result.orderSessionId.slice(0, 8)}…`)
-    } catch (err) {
-      console.error('[OrderSession draft error]', err)
-      showToast('⚠️ No se pudo crear la sesión de pedido')
-    } finally {
-      setSending(false)
-    }
-  }
-
   const handleConfirm = async () => {
     if (isEmpty) {
       return
@@ -310,6 +223,12 @@ export default function CartPage({ suggestionEngine }: Props) {
 
     if (belowMinimum) {
       showToast(`⚠️ El pedido minimo para esa zona es ${formatEuro(minimumBasket)}`)
+      return
+    }
+
+    // Online: delegate to CheckoutPage (Stripe Elements flow)
+    if (selectedPaymentMode === 'online') {
+      navigate('/checkout')
       return
     }
 
@@ -400,16 +319,6 @@ export default function CartPage({ suggestionEngine }: Props) {
         pin4: result.pin4 ?? null,
         qrToken: result.qrToken ?? null,
         expiresAt: result.expiresAt ?? null,
-      }
-
-      if (selectedPaymentMode === 'online') {
-        clearCart()
-        sessionStorage.setItem('stripe_pending_order', result.orderSessionId)
-        const successUrl = `${window.location.origin}/pedidos/${result.orderSessionId}?stripe_success=1`
-        const cancelUrl = `${window.location.origin}/carrito`
-        const checkout = await createStripeCheckout(result.orderSessionId, successUrl, cancelUrl)
-        window.location.href = checkout.checkoutUrl
-        return
       }
 
       // cashier: no syncAfterOrder — puntos solo tras pago confirmado
@@ -658,7 +567,7 @@ export default function CartPage({ suggestionEngine }: Props) {
             )}
 
             <div className={styles.ctaWrap}>
-              <button className={styles.ctaBtn} onClick={handleDraft} disabled={sending || belowMinimum || noDeliveryAvailable || missingCoords || outOfZone}>
+              <button className={styles.ctaBtn} onClick={() => void handleConfirm()} disabled={sending || belowMinimum || noDeliveryAvailable || missingCoords || outOfZone}>
                 {sending ? (
                   <>
                     <div className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />

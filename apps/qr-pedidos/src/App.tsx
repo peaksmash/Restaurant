@@ -13,6 +13,8 @@ import MenuPage from '@/pages/MenuPage'
 import OrdersPage from '@/pages/OrdersPage'
 import OrderTrackingPage from '@/pages/OrderTrackingPage'
 import ProfilePage from '@/pages/ProfilePage'
+import CheckoutPage from '@/pages/CheckoutPage'
+import OrderStatusPage from '@/pages/OrderStatusPage'
 import StripeCancelPage from '@/pages/StripeCancelPage'
 import StripeSuccessPage from '@/pages/StripeSuccessPage'
 import WelcomePage from '@/pages/WelcomePage'
@@ -91,6 +93,8 @@ export default function App() {
         <Route path="/cesta" element={<CartPage suggestionEngine={suggestionEngine} />} />
         <Route path="/pedidos" element={<WithNav><OrdersPage /></WithNav>} />
         <Route path="/pedidos/:id" element={<OrderTrackingPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/order-status/:id" element={<OrderStatusPage />} />
         <Route path="/pedido/success" element={<StripeSuccessPage />} />
         <Route path="/pedido/cancel" element={<StripeCancelPage />} />
         <Route path="/perfil" element={<WithNav><ProfilePage /></WithNav>} />

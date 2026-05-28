@@ -279,6 +279,39 @@ export const getOrderStatus = (id: string) =>
 export const getOrderSession = (id: string) =>
   request<import('@/types').StoredOrder>(`/api/order-sessions/${id}`)
 
+export const createPaymentIntent = (orderSessionId: string): Promise<{ clientSecret: string }> => {
+  const url = `${QR_SERVER_URL}/api/order-sessions/${orderSessionId}/payment-intent`
+  return fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  }).then(async (res) => {
+    if (!res.ok) {
+      const text = await res.text().catch(() => 'Error')
+      throw new Error(`PaymentIntent ${res.status}: ${text}`)
+    }
+    return res.json() as Promise<{ clientSecret: string }>
+  })
+}
+
+export interface QrOrderSessionStatus {
+  orderSessionId: string
+  operationalStatus: string
+  paymentStatus: string
+  totals: { subtotal: number; deliveryFee: number; total: number; currency: string }
+  createdAt: string
+}
+
+export const getQrOrderSession = (orderSessionId: string): Promise<QrOrderSessionStatus> => {
+  const url = `${QR_SERVER_URL}/api/order-sessions/${orderSessionId}`
+  return fetch(url).then(async (res) => {
+    if (!res.ok) {
+      const text = await res.text().catch(() => 'Error')
+      throw new Error(`OrderSession ${res.status}: ${text}`)
+    }
+    return res.json() as Promise<QrOrderSessionStatus>
+  })
+}
+
 export const createStripeCheckout = (
   orderSessionId: string,
   successUrl: string,
