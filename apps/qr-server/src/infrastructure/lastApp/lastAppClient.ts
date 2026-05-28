@@ -1,6 +1,6 @@
 /**
  * Thin HTTP client for Last.app API v2.
- * Only GET operations. No writes. No caching.
+ * No caching.
  */
 
 export interface LastAppClientConfig {
@@ -81,6 +81,33 @@ async function lastGet<T>(
   if (!res.ok) {
     const body = await res.text().catch(() => '(no body)');
     const error = new Error(`Last.app ${res.status} on ${path}: ${body}`) as Error & { statusCode?: number };
+    error.statusCode = res.status >= 500 ? 502 : res.status;
+    throw error;
+  }
+
+  return res.json() as Promise<T>;
+}
+
+async function lastPost<T>(
+  config: LastAppClientConfig,
+  path: string,
+  payload: unknown,
+  headers: Record<string, string> = {},
+): Promise<T> {
+  const url = `${config.baseUrl}${path}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${config.token}`,
+      'Content-Type': 'application/json',
+      ...headers,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '(no body)');
+    const error = new Error(`Last.app ${res.status} on POST ${path}: ${body}`) as Error & { statusCode?: number };
     error.statusCode = res.status >= 500 ? 502 : res.status;
     throw error;
   }
@@ -203,6 +230,18 @@ function normalizeCatalogCategory(raw: unknown, productLimit: number): LastCatal
     productsCount: allProducts.length,
     products: allProducts.slice(0, productLimit),
   };
+}
+
+export async function postTab(
+  config: LastAppClientConfig,
+  organizationId: string,
+  locationId: string,
+  payload: unknown,
+): Promise<unknown> {
+  return lastPost<unknown>(config, '/tabs', payload, {
+    OrganizationID: organizationId,
+    LocationID: locationId,
+  });
 }
 
 export async function getCatalogSummary(

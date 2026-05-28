@@ -7,6 +7,7 @@ import { registerDebugRoutes } from './http/routes/debug.routes.js';
 import { registerHealthRoutes } from './http/routes/health.routes.js';
 import { registerTenantRoutes } from './http/routes/tenant.routes.js';
 import { registerOrderSessionsRoutes } from './http/routes/orderSessions.routes.js';
+import { registerStripeRoutes } from './http/routes/stripe.routes.js';
 
 export function buildApp() {
   const env = loadEnv();
@@ -29,6 +30,7 @@ export function buildApp() {
   registerHealthRoutes(app);
   registerTenantRoutes(app);
   registerOrderSessionsRoutes(app);
+  registerStripeRoutes(app);
   registerDebugRoutes(app);
 
   return { app, env };
