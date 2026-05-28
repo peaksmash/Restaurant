@@ -26,6 +26,16 @@ export function buildApp() {
     },
   });
 
+  app.addContentTypeParser('application/json', { parseAs: 'buffer' }, function (req, body, done) {
+    try {
+      const json = JSON.parse(body.toString());
+      (req as any).rawBody = body;
+      done(null, json);
+    } catch (err) {
+      done(err as Error, undefined);
+    }
+  });
+
   registerErrorHandler(app);
   registerHealthRoutes(app);
   registerTenantRoutes(app);
